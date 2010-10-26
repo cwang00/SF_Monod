@@ -1,0 +1,156 @@
+ domain, nx,ny,nz, dx,dy,dz
+ n_constituents
+ half life     0.000000000000000     
+ half life     0.000000000000000     
+ al    1.0000000000000000E-003
+ at    1.0000000000000000E-004
+ Rtemp     1.000000000000000     
+ Rtemp     1.000000000000000     
+ Katt_temp    4.6199999999999998E-002
+ Kdet_temp    8.6900000000000005E-002
+ Katt_temp     0.000000000000000     
+ Kdet_temp     0.000000000000000     
+ tnext     4.000000000000000     
+ nt            10
+ well file 
+ well.EX.1.txt                                                                                       
+ well file 
+ well.EX2.1.txt                                                                                      
+ conc file Metal               
+ conc file Tracer              
+ part file 
+ parttrace.txt                                                                                       
+ moment file 
+ moments.txt                                                                                         
+            1    1.000000000000000     
+            2    1.000000000000000     
+            1   8.6900000000000005E-002
+            1   8.6900000000000005E-002
+            2    0.000000000000000     
+            2    0.000000000000000     
+ Calling Slim-Fast
+ hey made it here
+  tnext     4.000000000000000     
+ flag 1
+ min pdist   3.7999999999999999E-002
+ flag 2
+ nw=             2
+ flag 2.5
+ nx            50           50
+ ny            30           30
+ nz           100          100
+ ../harvey_flow.1.out.perm_x.pfb
+ header for file:
+ ../harvey_flow.1.out.perm_x.pfb                                                                     
+ X0, Y0, Z0:     0.000000000000000         0.000000000000000      
+    0.000000000000000     
+ nx, ny, nz:            50           30          100
+ dx, dy, dz:    0.3400000000000000        0.3400000000000000      
+   3.7999999999999999E-002
+ number of subgrids:             1
+ file read in
+ ../harvey_flow.1.out.perm_x.pfb
+ header for file:
+ ../harvey_flow.1.out.perm_x.pfb                                                                     
+ X0, Y0, Z0:     0.000000000000000         0.000000000000000      
+    0.000000000000000     
+ nx, ny, nz:            50           30          100
+ dx, dy, dz:    0.3400000000000000        0.3400000000000000      
+   3.7999999999999999E-002
+ number of subgrids:             1
+ file read in
+ ../harvey_flow.1.out.perm_x.pfb
+ header for file:
+ ../harvey_flow.1.out.perm_x.pfb                                                                     
+ X0, Y0, Z0:     0.000000000000000         0.000000000000000      
+    0.000000000000000     
+ nx, ny, nz:            50           30          100
+ dx, dy, dz:    0.3400000000000000        0.3400000000000000      
+   3.7999999999999999E-002
+ number of subgrids:             1
+ file read in
+ ../harvey_flow.vga.pfb
+ header for file:
+ ../harvey_flow.vga.pfb                                                                              
+ X0, Y0, Z0:     0.000000000000000         0.000000000000000      
+    0.000000000000000     
+ nx, ny, nz:            50           30          100
+ dx, dy, dz:     0.000000000000000         0.000000000000000      
+    0.000000000000000     
+ number of subgrids:             1
+ file read in
+ ../harvey_flow.vgn.pfb
+ header for file:
+ ../harvey_flow.vgn.pfb                                                                              
+ X0, Y0, Z0:     0.000000000000000         0.000000000000000      
+    0.000000000000000     
+ nx, ny, nz:            50           30          100
+ dx, dy, dz:     0.000000000000000         0.000000000000000      
+    0.000000000000000     
+ number of subgrids:             1
+ file read in
+ ../harvey_flow.sres.pfb
+ header for file:
+ ../harvey_flow.sres.pfb                                                                             
+ X0, Y0, Z0:     0.000000000000000         0.000000000000000      
+    0.000000000000000     
+ nx, ny, nz:            50           30          100
+ dx, dy, dz:     0.000000000000000         0.000000000000000      
+    0.000000000000000     
+ number of subgrids:             1
+ file read in
+ ../harvey_flow.1.head.pfb
+ header for file:
+ ../harvey_flow.1.head.pfb                                                                           
+ X0, Y0, Z0:     0.000000000000000         0.000000000000000      
+    0.000000000000000     
+ nx, ny, nz:            50           30          100
+ dx, dy, dz:    0.3400000000000000        0.3400000000000000      
+   3.7999999999999999E-002
+ number of subgrids:             1
+ file read in
+            1
+       100000
+            0
+       100001
+       100000
+            0
+ de allocating
+ v call
+  partsplit            1
+  tempav            0
+ ts
+ flag4
+ flag 5
+ flag 6
+ got to big loop
+  tnext    4.000000000000000     
+  t_prev    0.000000000000000     
+ got to big loop
+  tnext    8.000000000000000     
+  t_prev    4.000000000000000     
+ got to big loop
+  tnext    12.00000000000000     
+  t_prev    8.000000000000000     
+ got to big loop
+  tnext    16.00000000000000     
+  t_prev    12.00000000000000     
+ got to big loop
+  tnext    20.00000000000000     
+  t_prev    16.00000000000000     
+ got to big loop
+  tnext    24.00000000000000     
+  t_prev    20.00000000000000     
+ got to big loop
+  tnext    28.00000000000000     
+  t_prev    24.00000000000000     
+ got to big loop
+  tnext    32.00000000000000     
+  t_prev    28.00000000000000     
+ got to big loop
+  tnext    36.00000000000000     
+  t_prev    32.00000000000000     
+ got to big loop
+  tnext    40.00000000000000     
+  t_prev    36.00000000000000     
+ finished

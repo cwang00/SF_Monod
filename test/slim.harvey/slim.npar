@@ -1,0 +1,49 @@
+1   NH4				        ! number to  constituent names,  [d]
+2   NO3				        ! number to  constituent names,  [d]
+3   CH2O				        ! number to  constituent names,  [d]
+4   O2				        ! number to  constituent names,  [d]
+5   CO2				        ! number to  constituent names,  [d]
+6   HCO3				        ! number to  constituent names,  [d]
+7   Hplus				        ! number to  constituent names,  [d]
+8   CO3				        ! number to  constituent names,  [d]
+9   Ca2				        ! number to  constituent names,  [d]
+10   N2				        ! number to  constituent names,  [d]
+11   OH				        ! number to  constituent names,  [d]
+0.1 ! biomass1 concentration mg/l of porous media
+0.1 ! biomass2 concentration mg/l of porous media
+0.17 !microbial yield coefficient for biomass 1 (M biomass/ M substrate)
+0.5 !microbial yield coefficient for biomass 2 (M biomass/ M substrate)
+1.0 !emperical biomass 1 inhibition constant (M biomass/L^3 porous medium) mg/l
+0.5 !emperical biomass 2 inhibition constant (M biomass/L^3 porous medium) mg/l
+10 !CH2O half-saturation constant (M species/L^3 water) mg/l
+0.1 !O2 half-saturation constant (M species/L^3 water) mg/l
+0.1 !NH4 half-saturation constant (M species/L^3 water) mg/l
+0.5 !NO3 half-saturation constant (M species/L^3 water) mg/l
+1.0 !O2 inhibition coefficient(M species/L^3 water) mg/l
+1.5 !CH2O distribution coefficient cm^3/g
+0.34 !NH4 distribution coefficient cm^3/g
+0.0 ! specific biomass decay or maintenance constant (1/T) 1/day for biomass 1
+0.0 ! specific biomass decay or maintenance constant (1/T) 1/day for biomass 2
+28.2 !O2 Henry's constant
+56.6 !N2 Henry's constant
+0.95 !CO2 Henry's constant
+1.0 !substrate free air diffusion coefficient m^2/day
+5.0 !Electron acceptor free air diffusion coefficient m^2/day
+10.0 ! organic carbon oxidation maximum primary substrate utilization rate 1/day
+10.0 ! denitrification maximum primary substrate utilization rate 1/day
+1.0 ! nitrification maximum primary substrate utilization rate 1/day
+2.5920 ! CO2 forward rate
+6.818E6 ! CO2 backward rate 1/(M*day)
+7.344E8 ! CO2+H=HCO3 forward rate 1/(M*day)
+8.63 ! CO2+H=HCO3 backward rate 1/day
+1.08E4 ! CO3 +H2O = HCO3 +H forward rate 1/day
+9.216E7 ! CO3 +H2O = HCO3 +H backward rate 1/(M*day)
+1.1E-4 ! H2O=H+OH forward rate 1/day
+2.46E10 ! H2O=H+OH backward rate 1/(M*day)
+7.69 !CaCO3(s) + H = HCO3+Ca forward rate mol/(cm^2*day)
+7.69E-2 !CaCO3(s) + H = HCO3+Ca forward rate
+4.32E-3 !CaCO3(s) + H2O + CO2(aq) = 2HCO3 + Ca forward rate mol(cm^2*day)
+1.14E4 !CaCO3(s) + H2O + CO2(aq) = 2HCO3 + Ca backward rate mol(cm^2*day)
+6.0E-6 !CaCO3(s) = CO3 + Ca forward rate mol(cm^2*day)
+1.512E3 !CaCO3(s) = CO3 + Ca backward rate mol(cm^2*day)
+3.8 ! reactive mineral surface area per unit vol. of porous media estimated  1/cm

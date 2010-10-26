@@ -1,0 +1,254 @@
+"slim_harvey_small EXAMPLE 1"						! Title of Run
+"slog.harvey_small.EX.1.txt"						! Log File Name
+1
+2							! calcing V's internally, steady state
+"/home/cui1/weltyc_common/zcui/parflow_tcl/harvey_flow_small/harvey_flow.1.out.perm_x.pfb"								! Kx File Name
+"/home/cui1/weltyc_common/zcui/parflow_tcl/harvey_flow_small/harvey_flow.1.out.perm_x.pfb"								! Ky File Name
+"/home/cui1/weltyc_common/zcui/parflow_tcl/harvey_flow_small/harvey_flow.1.out.perm_x.pfb"								! Kz File Name
+0								! head (0) or pressure (1) flag
+"/home/cui1/weltyc_common/zcui/parflow_tcl/harvey_flow_small/harvey_flow.1.head.pfb"								! Head File Name
+1										! const phi
+0.39									! phi value [-]
+50 						! number of x-nodes in the domain [-]
+8 						! number of y-nodes in the domain [-]
+100 						! number of z-nodes in the domain [-]
+.34 						! delta-x [m]
+.34 						! delta-y [m]
+.038 						! delta-z [m]
+11 				! number of constituents
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.001						! longitudinal disersivity, alpha_l, [m]
+0.0001						! transverse disersivity, alpha_t, [m]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+.0462					! Attachment Coeff, Katt, [1/d]
+0.0869					! Detachment Coeff, Kdet, [1/d]
+0.					! Attachment Coeff, Katt, [1/d]
+0.00					! Detachment Coeff, Kdet, [1/d]
+0.02					! Attachment Coeff, Katt, [1/d]
+0.01					! Detachment Coeff, Kdet, [1/d]
+0.					! Attachment Coeff, Katt, [1/d]
+0.					! Detachment Coeff, Kdet, [1/d]
+0.					! Attachment Coeff, Katt, [1/d]
+0.					! Detachment Coeff, Kdet, [1/d]
+0.					! Attachment Coeff, Katt, [1/d]
+0.					! Detachment Coeff, Kdet, [1/d]
+0.					! Attachment Coeff, Katt, [1/d]
+0.					! Detachment Coeff, Kdet, [1/d]
+0.					! Attachment Coeff, Katt, [1/d]
+0.					! Detachment Coeff, Kdet, [1/d]
+0.					! Attachment Coeff, Katt, [1/d]
+0.					! Detachment Coeff, Kdet, [1/d]
+0.					! Attachment Coeff, Katt, [1/d]
+0.					! Detachment Coeff, Kdet, [1/d]
+0.					! Attachment Coeff, Katt, [1/d]
+0.					! Detachment Coeff, Kdet, [1/d]
+4.					! time increment until reporting particle vales, Tnext [d]
+10					! number of time increments, nt, (total runtime=nt*tnext in days)
+2				! writing out well BTC to file:
+"well.EX.1.txt"
+"well.EX2.1.txt"
+"well.EX3.1.txt"
+"well.EX4.1.txt"
+"well.EX5.1.txt"
+"well.EX6.1.txt"
+"well.EX7.1.txt"
+"well.EX8.1.txt"
+"well.EX9.1.txt"
+"well.EX10.1.txt"
+"well.EX11.1.txt"
+1.				! time discretization for wells [days]
+40				! number of time discretizations for wells
+2				! writing out concentrations in vtk using header:
+"conc.1"
+"NH4"
+"NO3"
+"CH2O"
+"O2"
+"CO2"
+"HCO3"
+"H"
+"CO3"
+"Ca"
+"N2"
+"OH"
+0				! not writing out particle locations
+"parttrace.txt"
+0				! not writing out moments
+"moments.txt"
+0				! forward simulation
+0.0						! molucular diffusivity,  [m**2/day]
+7500000						! maximum number of particles
+100000						! maximum number of particle steps per time loop
+1E-10						! epsilon/zero value drop tolerance
+0						! number of wells [x,y,zt,zb,q]
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+0						! number of planes [x/y/z,coord]
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+40.			! Co [mass/vol**3]
+1000				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+5.76			! Co [mass/vol**3]
+1000				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+82.0			! Co [mass/vol**3]
+1000				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+6.0			! Co [mass/vol**3]
+500				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+57.2			! Co [mass/vol**3]
+1000				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+445.3			! Co [mass/vol**3]
+5000				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+6.8e-5			! Co [mass/vol**3]
+100				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+0.24			! Co [mass/vol**3]
+800				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+37.2			! Co [mass/vol**3]
+1000				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+0.0			! Co [mass/vol**3]
+0				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+0.68				! Pulse IC: Xlower [m] 
+1.02                              ! Xupper [m] 
+0.68				! Ylower [m]
+2.04                             ! Yupper [m]
+0.076				! Zlower [m]
+3.724				! Zupper [m]
+1.122e-3			! Co [mass/vol**3]
+100				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+0							! Fixed Number of Particles
+0							! Not temporally avging for concentration
+0						! number of timesteps to skip
+ 
+ 
+ 
+ 

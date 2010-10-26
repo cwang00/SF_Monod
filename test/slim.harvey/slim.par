@@ -1,0 +1,89 @@
+"slim_harvey_bact EXAMPLE 1"						! Title of Run
+"slog.harvey_bact.EX.1.txt"						! Log File Name
+0
+2							! calcing V's internally, steady state
+"../harvey_flow.1.out.perm_x.pfb"								! Kx File Name
+"../harvey_flow.1.out.perm_x.pfb"								! Ky File Name
+"../harvey_flow.1.out.perm_x.pfb"								! Kz File Name
+"../harvey_flow.vga.pfb"								! VG alpha File Name
+"../harvey_flow.vgn.pfb"								! VG n File Name
+"../harvey_flow.sres.pfb"								! VG Sres File Name
+0								! head (0) or pressure (1) flag
+"../harvey_flow.1.head.pfb"								! Head File Name
+1										! const phi
+0.39									! phi value [-]
+50 						! number of x-nodes in the domain [-]
+30 						! number of y-nodes in the domain [-]
+100 						! number of z-nodes in the domain [-]
+.34 						! delta-x [m]
+.34 						! delta-y [m]
+.038 						! delta-z [m]
+2 				! number of constituents
+0.				        ! radioactive half life,  [d]
+0.				        ! radioactive half life,  [d]
+0.001						! longitudinal disersivity, alpha_l, [m]
+0.0001						! transverse disersivity, alpha_t, [m]
+1.0					! Linear Retardation Coeff, R, [-]
+1.0					! Linear Retardation Coeff, R, [-]
+.0462					! Attachment Coeff, Katt, [1/d]
+0.0869					! Detachment Coeff, Kdet, [1/d]
+0.					! Attachment Coeff, Katt, [1/d]
+0.00					! Detachment Coeff, Kdet, [1/d]
+4.					! time increment until reporting particle vales, Tnext [d]
+10					! number of time increments, nt, (total runtime=nt*tnext in days)
+2				! writing out well BTC to file:
+"well.EX.1.txt"
+"well.EX2.1.txt"
+1.				! time discretization for wells [days]
+40				! number of time discretizations for wells
+2				! writing out concentrations in vtk using header:
+"conc.1"
+"Metal"
+"Tracer"
+0				! not writing out particle locations
+"parttrace.txt"
+0				! not writing out moments
+"moments.txt"
+0				! forward simulation
+0.0						! molucular diffusivity,  [m**2/day]
+7500000						! maximum number of particles
+100000						! maximum number of particle steps per time loop
+1E-10						! epsilon/zero value drop tolerance
+2						! number of wells [x,y,zt,zb,q]
+12.07 , 5.27 , 1.9 , 1.862 , 0.000 
+12.07 , 5.27 , 1.330 , 1.292 , 0.000 
+"plane.EX.1.txt"
+"plane.EX.1.txt"
+0						! number of planes [x/y/z,coord]
+2							! Pulse-Type IC
+4.76				! Pulse IC: Xlower [m] 
+5.25                              ! Xupper [m] 
+5.1				! Ylower [m]
+5.44                             ! Yupper [m]
+1.1				! Zlower [m]
+2.1				! Zupper [m]
+1.			! Co [mass/vol**3]
+100000				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+2							! Pulse-Type IC
+4.76				! Pulse IC: Xlower [m] 
+5.25                              ! Xupper [m] 
+5.1				! Ylower [m]
+5.44                             ! Yupper [m]
+1.1				! Zlower [m]
+2.1				! Zupper [m]
+1.			! Co [mass/vol**3]
+100000				! num particles total 
+0.00001				! pulse decay rate 
+.000				! pulse decay time [days] 
+1				! decay timesteps [time/timesteps] 
+1							! Particle Splitting
+1E-20						! min conc
+0							! Not temporally avging for concentration
+0						! number of timesteps to skip
+ 
+ 
+ 
+ 

@@ -20,13 +20,13 @@ MODULE Particles
 !   INTEGER*4, DIMENSION(:), ALLOCATABLE :: tmpirp
 !   INTEGER, DIMENSION(:), ALLOCATABLE :: partNumber
    INTEGER*4, DIMENSION(:), ALLOCATABLE :: removed
-!   INTEGER totalremoved, rmcnter1, rmcnter2
+   INTEGER totalremoved
    REAL*8, DIMENSION(TotalNumberOfSpecies) :: maxParticleMass
 
    CONTAINS
 
      SUBROUTINE countParticles( pp,ip, totalparticles, nx, ny, nz, ns, &
-                                 delv )
+                                 delv, tnext )
 
 !       TYPE( Ptr_to_array ), DIMENSION(:,:,:,:) :: part_num
 !       INTEGER, DIMENSION(:,:,:,:) :: number_of_parts
@@ -35,6 +35,7 @@ MODULE Particles
        INTEGER*4 :: nx, ny, nz, ns, totalparticles, i,j,k,l, p, x, y, z
        REAL*8, DIMENSION(3) :: delv 
        INTEGER*4, DIMENSION(ns, nx, ny, nz) :: pcount
+       REAL*8 :: tnext
 
        DO l = 1, ns
          DO i = 1, nx
@@ -53,7 +54,9 @@ MODULE Particles
          x = IDINT( pp( p, 1 ) / delv( 1 ) ) + 1
          y = IDINT( pp( p, 2 ) / delv( 2 ) ) + 1
          z = IDINT( pp( p, 3 ) / delv( 3 ) ) + 1
-         IF ( ip(p,2) .EQ. 1 .AND. x .GT. 0 .AND. y .GT. 0 .AND. z .GT. 0) THEN
+         IF ( ip(p,2) .EQ. 1 .AND. x .GT. 0 .AND. y .GT. 0 .AND. z .GT. 0  &
+             .AND. x .LE. nx .AND. y .LE. ny .AND. z .LE. nz .AND.        &
+              pp( p, 7 ) .LE. tnext ) THEN
            number_of_parts( ip( p, 1 ), x, y, z ) =                           &
               number_of_parts( ip( p, 1 ), x, y, z ) + 1
          ENDIF
@@ -81,10 +84,22 @@ MODULE Particles
          x = IDINT( pp( p, 1 ) / delv( 1 ) ) + 1
          y = IDINT( pp( p, 2 ) / delv( 2 ) ) + 1
          z = IDINT( pp( p, 3 ) / delv( 3 ) ) + 1
-         IF ( ip(p,2) .EQ. 1 .AND. x .GT. 0 .AND. y .GT. 0 .AND. z .GT. 0) THEN
+         IF ( ip(p,2) .EQ. 1 .AND. x .GT. 0 .AND. y .GT. 0 .AND. z .GT. 0 &
+             .AND. x .LE. nx .AND. y .LE. ny .AND. z .LE. nz .AND.        &
+            pp( p, 7 ) .LE. tnext ) THEN
            pcount( ip(p, 1), x, y, z ) = pcount( ip(p, 1), x, y, z ) + 1
            part_numbers( ip(p, 1), x, y, z )%arr( pcount( ip(p, 1), x, y,z ))&
                                                                          = p
+         ENDIF
+         !
+         ! recycle particles
+         IF ( ip(p,2) .EQ. 1 .AND. (                                  &
+             ( x .LE. 0 .OR. y .LE. 0 .OR. z .LE.  0 ) ) .AND.        &
+               pp(p, 7) .LE. tnext  ) THEN
+           IF( ALL(removed(1:totalremoved) .NE. p ) ) THEN
+             totalremoved = totalremoved + 1
+             removed( totalremoved ) = p 
+           ENDIF
          ENDIF
        END DO
      END SUBROUTINE countParticles
@@ -101,7 +116,7 @@ MODULE Particles
        ALLOCATE( removed( npmax ) )
 !       ALLOCATE( partNumber(npmax) )
        ALLOCATE( part_numbers( ns, nx, ny, nz ) )
-!       totalremoved = 0
+       totalremoved = 0
 !       rmcnter1 = 0
 !       rmcnter2 = 0
      END SUBROUTINE allocateParticles_Memory
@@ -150,15 +165,15 @@ MODULE Particles
        INTEGER*4,  DIMENSION(:,:) :: ip, iprp
        INTEGER*4,  DIMENSION(:) ::  irp
        REAL*8, DIMENSION(3) :: delv
-       INTEGER :: ns, nx, ny, nz, i, j, k, l, m, totalremoved,n, idx
+       INTEGER :: ns, nx, ny, nz, i, j, k, l, m, n, idx, p
        REAL*4, DIMENSION(:,:,:,:) :: conc
        REAL, DIMENSION(13) :: rates
        REAL*4 :: rate, minmass,maxmass, mass, backgroundmass, particlemass
        REAL*8 :: dt_day
        INTEGER*4 ::  npmax, np
        CHARACTER*10 substratename
+       LOGICAL :: found, recycle
 
-    totalremoved = 0
     DO i = 3, nx - 2
       DO j = 3, ny - 2
         DO k = 3, nz - 2
@@ -204,6 +219,21 @@ MODULE Particles
               ENDIF
               mass = rate * delv(1) * delv(2) * delv(3)                     &
                         * sat( i,j , k)  * porosity( i,j,k)
+
+              ! 
+              !gases in unsaturated soil
+              !
+              IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'N2' ) THEN
+                mass = mass * sat(i,j,k) /                                 & 
+                ( npars%N2HenryConst * ( 1 - sat( i,j,k) ) + sat(i,j,k) )
+              ELSE IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'CO2' ) THEN
+                mass = mass * sat(i,j,k) /                                 & 
+                ( npars%CO2HenryConst * ( 1 - sat( i,j,k) ) + sat(i,j,k) )
+              ELSE IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'O2' ) THEN
+                mass = mass * sat(i,j,k) /                                 & 
+                ( npars%O2HenryConst * ( 1 - sat( i,j,k) ) + sat(i,j,k) )
+              ENDIF
+
               backgroundmass = npars%backgroundConc( l )                    &
                            * delv(1) * delv(2) * delv(3)                    &
                         * sat( i,j , k)  * porosity( i,j,k)
@@ -241,7 +271,8 @@ MODULE Particles
                     pp(idx,4) = mass + maxmass 
                   ENDIF
                   pp(idx,5) = DBLE(idx)
-                  pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
+                  pp(idx,7) = timeCellAllSpec( i, j, k, pp ) 
+!                  pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
                   ip(idx,1) = l
                   ip(idx,2) = 1
 
@@ -290,7 +321,8 @@ MODULE Particles
                     pp(idx,4) = mass - maxmass
                   ENDIF
                   pp(idx,5) = DBLE(idx)
-                  pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
+                  pp(idx,7) = timeCellAllSpec( i, j, k, pp ) 
+                  !pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
                   ip(idx,1) = l
                   ip(idx,2) = 1
 
@@ -339,12 +371,14 @@ MODULE Particles
                  IF ( totalremoved .GT. 0 ) THEN
                    idx = removed( totalremoved )
                    totalremoved = totalremoved - 1
+                   recycle = .TRUE.
                  ELSE 
                    idx = np + 1
                    np = np + 1
+                   recycle = .FALSE.
                  ENDIF
 
-                 IF ( np <= npmax ) THEN
+                 IF ( np <= npmax / 2 .OR. recycle ) THEN
 
                     pp(idx,1) = ( i - 1 ) * delv( 1 ) + delv( 1 ) * ran1( 0 )
                     pp(idx,2) = ( j - 1 ) * delv( 2 ) + delv( 2 ) * ran1( 0 )
@@ -373,8 +407,30 @@ MODULE Particles
 !                   PRINT*, '1 max num particles exceeded. &
 !                           &increase npmax parameter ',npmax
 !                   STOP
-
-
+                  IF( number_of_parts(l,i,j,k) > totalremoved ) THEN
+                     DO  m = 1, number_of_parts(l,i,j,k)
+                       found = .false.
+                       DO p = 1, totalremoved
+                         IF( part_numbers(l,i,j,k)%arr( m ) .EQ.  & 
+                                removed( p ) )                      THEN
+                                found = .true.
+                                EXIT
+                         ENDIF
+                       ENDDO
+                       IF( .NOT. found ) THEN
+                         pp( part_numbers(l,i,j,k)%arr(m), 4 ) =             &
+                             pp( part_numbers(l,i,j,k)%arr(m), 4 ) +         &
+                                      ( mass + maxmass ) /                  &
+                                  ( number_of_parts(l,i,j,k) - totalremoved ) 
+                       ENDIF
+                     ENDDO    
+                  ELSE
+                   PRINT*, 'WARNING: total removed greater than or equal to &
+                   &number of parts' 
+                   STOP
+                  ENDIF
+                  mass = -1.0 !exit do while
+                  np = np - 1
                  ENDIF
                  ENDDO ! DO WHILE
 
@@ -425,11 +481,13 @@ MODULE Particles
                  IF ( totalremoved .GT. 0 ) THEN
                    idx = removed( totalremoved )
                    totalremoved = totalremoved - 1
+                   recycle = .TRUE.
                  ELSE 
                    idx = np + 1
                    np = np + 1
+                   recycle = .FALSE.
                  ENDIF
-                 IF ( np <= npmax ) THEN
+                 IF ( np <= npmax / 2 .OR. recycle) THEN
                   pp(idx,1) = ( i - 1 ) * delv( 1 ) + delv( 1 ) * ran1( 0 )
                   pp(idx,2) = ( j - 1 ) * delv( 2 ) + delv( 2 ) * ran1( 0 )
                   pp(idx,3) = ( k - 1 ) * delv( 3 ) + delv( 3 ) * ran1( 0 )
@@ -440,14 +498,48 @@ MODULE Particles
                     pp(idx,4) = mass - maxmass
                   ENDIF
                   pp(idx,5) = DBLE(idx)
-                  pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
+                  pp(idx,7) = timeCellAllSpec( i, j, k, pp ) 
+                  !pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
                   ip(idx,1) = l
                   ip(idx,2) = 1
 
                  ELSE
-                   PRINT*, '2 max num particles exceeded. &
-                           &increase npmax parameter ',npmax
+!                   PRINT*, '2 max num particles exceeded. &
+!                           &increase npmax parameter ',npmax
+!                   STOP
+
+                  IF( number_of_parts(l,i,j,k) > totalremoved ) THEN
+                     DO  m = 1, number_of_parts(l,i,j,k)
+                       found = .false.
+                       DO p = 1, totalremoved
+                         IF( part_numbers(l,i,j,k)%arr( m ) .EQ.  & 
+                                removed( p ) )                      THEN
+                                found = .true.
+                                EXIT
+                         ENDIF
+                       ENDDO
+                       IF( .NOT. found ) THEN
+                        IF ( abs( mass - maxmass ) < backgroundmass ) THEN 
+                          pp( part_numbers(l,i,j,k)%arr(m), 4 ) =             &
+                               pp( part_numbers(l,i,j,k)%arr(m), 4 ) +        &
+                                      ( mass - maxmass ) /                   &
+                                  ( number_of_parts(l,i,j,k) - totalremoved ) 
+                        ELSE
+                          pp( part_numbers(l,i,j,k)%arr(m), 4 ) =             &
+                               pp( part_numbers(l,i,j,k)%arr(m), 4 ) -        &
+                                      backgroundmass /                       &
+                                  ( number_of_parts(l,i,j,k) - totalremoved ) 
+                        ENDIF
+
+                       ENDIF
+                     ENDDO    
+                  ELSE
+                   PRINT*, 'WARNING: total removed greater than or equal to &
+                   &number of parts' 
                    STOP
+                  ENDIF
+                  mass = 1.0 !exit do while
+                  np = np - 1
                  ENDIF
                 ENDDO
             ENDIF ! IF( number_of_parts( l, i, j, k ) == 0 .AND. mass > 0.0)
@@ -639,34 +731,44 @@ MODULE Particles
        RETURN
      END SUBROUTINE
 
-     REAL*8 FUNCTION timeCellAllSpec( x, y, z, pp, np, ip, delv )
+     REAL*8 FUNCTION timeCellAllSpec( x, y, z, pp )
+!     REAL*8 FUNCTION timeCellAllSpec( x, y, z, pp, np, ip, delv )
 
-       INTEGER ::  x, y, z, i, ix, iy, iz
-       INTEGER*4 ::  np
+!       INTEGER ::  x, y, z, i, ix, iy, iz
+       INTEGER ::  x, y, z, i
        REAL*8, DIMENSION(:,:) :: pp
-       INTEGER*4,  DIMENSION(:,:) :: ip
-       REAL*8, DIMENSION(3) :: delv
        LOGICAL found
+!       INTEGER*4 ::  np
+!       INTEGER*4,  DIMENSION(:,:) :: ip
+!       REAL*8, DIMENSION(3) :: delv
      
       found = .FALSE. 
       timeCellAllSpec = 0.0
-       DO i = 1, np 
-         ix = IDINT( pp( i, 1 ) / delv( 1 ) ) + 1
-         iy = IDINT( pp( i, 2 ) / delv( 2 ) ) + 1
-         iz = IDINT( pp( i, 3 ) / delv( 3 ) ) + 1
-         IF ( ip(i,2) .EQ. 1 .AND.              &
-              ix .EQ. x .AND. iy .EQ. y .AND. iz .EQ. z ) THEN
-          found = .TRUE.
-          timeCellAllSpec = pp( i, 7 )
-          EXIT 
-         ENDIF  
-       END DO
 
-       IF ( .NOT. found ) THEN
+!      DO i = 1, np
+!         ix = IDINT( pp( i, 1 ) / delv( 1 ) ) + 1
+!         iy = IDINT( pp( i, 2 ) / delv( 2 ) ) + 1
+!         iz = IDINT( pp( i, 3 ) / delv( 3 ) ) + 1
+!         IF ( ip(i,2) .EQ. 1 .AND.              &
+!              ix .EQ. x .AND. iy .EQ. y .AND. iz .EQ. z ) THEN
+!          found = .TRUE.
+!          timeCellAllSpec = pp( i, 7 )
+!          EXIT 
+!         ENDIF  
+!      END DO
+
+      DO i = 1, TotalNumberOfSpecies
+        IF ( number_of_parts(i, x, y, z ) > 0 ) THEN
+           found = .TRUE.
+           timeCellAllSpec = pp( part_numbers(i, x, y, z)%arr(1), 7 )
+           EXIT
+        ENDIF
+      ENDDO
+
+      IF ( .NOT. found ) THEN
          PRINT*, 'NO particles are found in cell( ', x, ', ', y, ', ', z, ')' 
          PRINT*, 'when creating new particles, set time of particle to zero!' 
-
-       ENDIF
+      ENDIF
 
      END FUNCTION timeCellAllSpec
 
@@ -774,7 +876,487 @@ MODULE Particles
        ENDDO
 
      END SUBROUTINE markRemovedParticles
+
+     SUBROUTINE  addGasDispersion( n, pp, ip, delv, tloc, fbl, porst, satutn, &
+                                   dxx, dyy, dzz )
+      INTEGER*4 :: n, tp1, tp2, tp3
+      INTEGER*4 :: i, j, k
+      INTEGER*4, DIMENSION(:,:) :: ip
+      INTEGER*4, DIMENSION(:) :: tloc
+      REAL*8, DIMENSION(:) :: fbl, delv
+      REAL*8, DIMENSION(:,:) :: pp
+      REAL*8, DIMENSION(:,:,:) :: porst, satutn
+      REAL*8 :: dxx, dyy, dzz, D, H
+      REAL*8, DIMENSION(4,4,4) :: pbl, sbl
+
+      IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
+
+        DO  i = 1, 3
+          DO  j = 1, 3
+            DO  k = 1, 3
+
+              tp1 = tloc(1) -2 + i
+              tp2 = tloc(2) -2 + j
+              tp3 = tloc(3) -2 + k
+             
+              pbl(i,j,k) = ( 1.0D0 - fbl(2) ) * ( 1.0D0 - fbl(3) )      &
+                           * porst( tp1, tp2, tp3 ) +                   &
+                           fbl(2) * ( 1.0D0 - fbl(3) )                  &
+                           * porst( tp1, tp2 + 1, tp3 )      +          &
+                           ( 1.0D0 - fbl(2) ) * fbl(3) *                &
+                           porst( tp1, tp2, tp3 + 1 )  +                &
+                           fbl(2) * fbl(3) * porst( tp1, tp2 + 1, tp3 + 1 )
+              sbl(i,j,k) = ( 1.0D0 - fbl(2) ) * ( 1.0D0 - fbl(3) )      &
+                           * satutn( tp1, tp2, tp3 ) +                  &
+                           fbl(2) * ( 1.0D0 - fbl(3) )                  &
+                           * satutn( tp1, tp2 + 1, tp3 )     +          &
+                           ( 1.0D0 - fbl(2) ) * fbl(3) *                &
+                           satutn( tp1, tp2, tp3 + 1 )  +               &
+                           fbl(2) * fbl(3) * satutn( tp1, tp2 + 1, tp3 + 1 )
+            ENDDO
+          ENDDO
+        ENDDO
+
+        IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' ) THEN
+          H = npars%N2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2' ) THEN
+          H = npars%O2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' ) THEN
+          H = npars%CO2HenryConst
+          D = npars%SubstrateFreeAirDiffusionCoeff_m2_day
+
+        ENDIF
+
+        dxx = dxx + ( ( 1.0D0 -                                     &
+                 satutn( tloc(1), tloc(2), tloc(3) ) )**3.33333 /       &
+                 satutn( tloc(1), tloc(2), tloc(3) ) / ( 3 *            &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.66666 ) *      &
+                 ( pbl( 3, 2, 2 ) - pbl(1,2,2) ) / ( 2 * delv( 1 ) ) -  &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.33333 * (      &
+                 ( 10.0D0 *                                             &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3 ) ) ) ** 2.33333 ) / &
+                 ( 3 * satutn( tloc(1), tloc(2), tloc(3) ) ) +          &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 3.33333 /   &
+                  satutn( tloc(1), tloc(2), tloc(3) ) ** 2 )  *         &
+                 ( sbl( 3, 2, 2 ) - sbl( 1,2,2) ) / ( 2 * delv( 1 ) ) ) * &
+                 H * D
+
+        dyy = dyy + ( ( 1.0D0 -                                     &
+                 satutn( tloc(1), tloc(2), tloc(3) ) )**3.33333 /       &
+                 satutn( tloc(1), tloc(2), tloc(3) ) / ( 3 *            &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.66666 ) *      &
+                 ( pbl( 2, 3, 2 ) - pbl(2,1,2) ) / ( 2 * delv( 2 ) ) -  &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.33333 * (      &
+                 ( 10.0D0 *                                             &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3 ) ) ) ** 2.33333 ) / &
+                 ( 3 * satutn( tloc(1), tloc(2), tloc(3) ) ) +          &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 3.33333 /   &
+                  satutn( tloc(1), tloc(2), tloc(3) ) ** 2 )  *         &
+                 ( sbl( 2, 3, 2 ) - sbl( 2,1,2) ) / ( 2 * delv( 2 ) ) ) * &
+                 H * D
+        dzz = dzz + ( ( 1.0D0 -                                     &
+                 satutn( tloc(1), tloc(2), tloc(3) ) )**3.33333 /       &
+                 satutn( tloc(1), tloc(2), tloc(3) ) / ( 3 *            &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.66666 ) *      &
+                 ( pbl( 2, 2, 3 ) - pbl(2,2,1) ) / ( 2 * delv( 3 ) ) -  &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.33333 * (      &
+                 ( 10.0D0 *                                             &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3 ) ) ) ** 2.33333 ) / &
+                 ( 3 * satutn( tloc(1), tloc(2), tloc(3) ) ) +          &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 3.33333 /   &
+                  satutn( tloc(1), tloc(2), tloc(3) ) ** 2 )  *         &
+                 ( sbl( 2, 2, 3 ) - sbl( 2,2,1) ) / ( 2 * delv( 3 ) ) ) * &
+                 H * D
+
+      ENDIF
+
+     END SUBROUTINE addGasDispersion
+
+     SUBROUTINE  addGasDispersionX( n, pp, ip, delv, tloc, fbl, porst, satutn, &
+                                   dxx )
+      INTEGER*4 :: n, tp1, tp2, tp3
+      INTEGER*4 :: i, j, k
+      INTEGER*4, DIMENSION(:,:) :: ip
+      INTEGER*4, DIMENSION(:) :: tloc
+      REAL*8, DIMENSION(:) :: fbl, delv
+      REAL*8, DIMENSION(:,:) :: pp
+      REAL*8, DIMENSION(:,:,:) :: porst, satutn
+      REAL*8 :: dxx, D, H
+      REAL*8, DIMENSION(4,4,4) :: pbl, sbl
+
+      IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
+
+        DO  i = 1, 3
+          DO  j = 1, 3
+            DO  k = 1, 3
+
+              tp1 = tloc(1) -2 + i
+              tp2 = tloc(2) -2 + j
+              tp3 = tloc(3) -2 + k
+             
+              pbl(i,j,k) = ( 1.0D0 - fbl(2) ) * ( 1.0D0 - fbl(3) )      &
+                           * porst( tp1, tp2, tp3 ) +                   &
+                           fbl(2) * ( 1.0D0 - fbl(3) )                  &
+                           * porst( tp1, tp2 + 1, tp3 )      +          &
+                           ( 1.0D0 - fbl(2) ) * fbl(3) *                &
+                           porst( tp1, tp2, tp3 + 1 )  +                &
+                           fbl(2) * fbl(3) * porst( tp1, tp2 + 1, tp3 + 1 )
+              sbl(i,j,k) = ( 1.0D0 - fbl(2) ) * ( 1.0D0 - fbl(3) )      &
+                           * satutn( tp1, tp2, tp3 ) +                  &
+                           fbl(2) * ( 1.0D0 - fbl(3) )                  &
+                           * satutn( tp1, tp2 + 1, tp3 )     +          &
+                           ( 1.0D0 - fbl(2) ) * fbl(3) *                &
+                           satutn( tp1, tp2, tp3 + 1 )  +               &
+                           fbl(2) * fbl(3) * satutn( tp1, tp2 + 1, tp3 + 1 )
+            ENDDO
+          ENDDO
+        ENDDO
+
+        IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' ) THEN
+          H = npars%N2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2' ) THEN
+          H = npars%O2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' ) THEN
+          H = npars%CO2HenryConst
+          D = npars%SubstrateFreeAirDiffusionCoeff_m2_day
+
+        ENDIF
+
+        dxx = dxx + ( ( 1.0D0 -                                     &
+                 satutn( tloc(1), tloc(2), tloc(3) ) )**3.33333 /       &
+                 satutn( tloc(1), tloc(2), tloc(3) ) / ( 3 *            &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.66666 ) *      &
+                 ( pbl( 3, 2, 2 ) - pbl(1,2,2) ) / ( 2 * delv( 1 ) ) -  &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.33333 * (      &
+                 ( 10.0D0 *                                             &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3 ) ) ) ** 2.33333 ) / &
+                 ( 3 * satutn( tloc(1), tloc(2), tloc(3) ) ) +          &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 3.33333 /   &
+                  satutn( tloc(1), tloc(2), tloc(3) ) ** 2 )  *         &
+                 ( sbl( 3, 2, 2 ) - sbl( 1,2,2) ) / ( 2 * delv( 1 ) ) ) * &
+                 H * D
+      ENDIF
+
+     END SUBROUTINE addGasDispersionX
+
+     SUBROUTINE  addGasDispersionY( n, pp, ip, delv, tloc, fbl, porst, satutn, &
+                                   dyy )
+      INTEGER*4 :: n, tp1, tp2, tp3
+      INTEGER*4 :: i, j, k
+      INTEGER*4, DIMENSION(:,:) :: ip
+      INTEGER*4, DIMENSION(:) :: tloc
+      REAL*8, DIMENSION(:) :: fbl, delv
+      REAL*8, DIMENSION(:,:) :: pp
+      REAL*8, DIMENSION(:,:,:) :: porst, satutn
+      REAL*8 :: dyy, D, H
+      REAL*8, DIMENSION(4,4,4) :: pbl, sbl
+
+      IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
+
+        DO  i = 1, 3
+          DO  j = 1, 3
+            DO  k = 1, 3
+
+              tp1 = tloc(1) -2 + i
+              tp2 = tloc(2) -2 + j
+              tp3 = tloc(3) -2 + k
+             
+              pbl(i,j,k) = ( 1.0D0 - fbl(2) ) * ( 1.0D0 - fbl(3) )      &
+                           * porst( tp1, tp2, tp3 ) +                   &
+                           fbl(2) * ( 1.0D0 - fbl(3) )                  &
+                           * porst( tp1, tp2 + 1, tp3 )      +          &
+                           ( 1.0D0 - fbl(2) ) * fbl(3) *                &
+                           porst( tp1, tp2, tp3 + 1 )  +                &
+                           fbl(2) * fbl(3) * porst( tp1, tp2 + 1, tp3 + 1 )
+              sbl(i,j,k) = ( 1.0D0 - fbl(2) ) * ( 1.0D0 - fbl(3) )      &
+                           * satutn( tp1, tp2, tp3 ) +                  &
+                           fbl(2) * ( 1.0D0 - fbl(3) )                  &
+                           * satutn( tp1, tp2 + 1, tp3 )     +          &
+                           ( 1.0D0 - fbl(2) ) * fbl(3) *                &
+                           satutn( tp1, tp2, tp3 + 1 )  +               &
+                           fbl(2) * fbl(3) * satutn( tp1, tp2 + 1, tp3 + 1 )
+            ENDDO
+          ENDDO
+        ENDDO
+
+        IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' ) THEN
+          H = npars%N2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2' ) THEN
+          H = npars%O2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' ) THEN
+          H = npars%CO2HenryConst
+          D = npars%SubstrateFreeAirDiffusionCoeff_m2_day
+
+        ENDIF
+
+        dyy = dyy + ( ( 1.0D0 -                                     &
+                 satutn( tloc(1), tloc(2), tloc(3) ) )**3.33333 /       &
+                 satutn( tloc(1), tloc(2), tloc(3) ) / ( 3 *            &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.66666 ) *      &
+                 ( pbl( 2, 3, 2 ) - pbl(2,1,2) ) / ( 2 * delv( 2 ) ) -  &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.33333 * (      &
+                 ( 10.0D0 *                                             &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3 ) ) ) ** 2.33333 ) / &
+                 ( 3 * satutn( tloc(1), tloc(2), tloc(3) ) ) +          &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 3.33333 /   &
+                  satutn( tloc(1), tloc(2), tloc(3) ) ** 2 )  *         &
+                 ( sbl( 2, 3, 2 ) - sbl( 2,1,2) ) / ( 2 * delv( 2 ) ) ) * &
+                 H * D
+      ENDIF
+
+     END SUBROUTINE addGasDispersionY
+
+     SUBROUTINE  addGasDispersionZ( n, pp, ip, delv, tloc, fbl, porst, satutn, &
+                                   dzz )
+      INTEGER*4 :: n, tp1, tp2, tp3
+      INTEGER*4 :: i, j, k
+      INTEGER*4, DIMENSION(:,:) :: ip
+      INTEGER*4, DIMENSION(:) :: tloc
+      REAL*8, DIMENSION(:) :: fbl, delv
+      REAL*8, DIMENSION(:,:) :: pp
+      REAL*8, DIMENSION(:,:,:) :: porst, satutn
+      REAL*8 :: dzz, D, H
+      REAL*8, DIMENSION(4,4,4) :: pbl, sbl
+
+      IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
+
+        DO  i = 1, 3
+          DO  j = 1, 3
+            DO  k = 1, 3
+
+              tp1 = tloc(1) -2 + i
+              tp2 = tloc(2) -2 + j
+              tp3 = tloc(3) -2 + k
+             
+              pbl(i,j,k) = ( 1.0D0 - fbl(2) ) * ( 1.0D0 - fbl(3) )      &
+                           * porst( tp1, tp2, tp3 ) +                   &
+                           fbl(2) * ( 1.0D0 - fbl(3) )                  &
+                           * porst( tp1, tp2 + 1, tp3 )      +          &
+                           ( 1.0D0 - fbl(2) ) * fbl(3) *                &
+                           porst( tp1, tp2, tp3 + 1 )  +                &
+                           fbl(2) * fbl(3) * porst( tp1, tp2 + 1, tp3 + 1 )
+              sbl(i,j,k) = ( 1.0D0 - fbl(2) ) * ( 1.0D0 - fbl(3) )      &
+                           * satutn( tp1, tp2, tp3 ) +                  &
+                           fbl(2) * ( 1.0D0 - fbl(3) )                  &
+                           * satutn( tp1, tp2 + 1, tp3 )     +          &
+                           ( 1.0D0 - fbl(2) ) * fbl(3) *                &
+                           satutn( tp1, tp2, tp3 + 1 )  +               &
+                           fbl(2) * fbl(3) * satutn( tp1, tp2 + 1, tp3 + 1 )
+            ENDDO
+          ENDDO
+        ENDDO
+
+        IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' ) THEN
+          H = npars%N2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2' ) THEN
+          H = npars%O2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' ) THEN
+          H = npars%CO2HenryConst
+          D = npars%SubstrateFreeAirDiffusionCoeff_m2_day
+
+        ENDIF
+
+        dzz = dzz + ( ( 1.0D0 -                                     &
+                 satutn( tloc(1), tloc(2), tloc(3) ) )**3.33333 /       &
+                 satutn( tloc(1), tloc(2), tloc(3) ) / ( 3 *            &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.66666 ) *      &
+                 ( pbl( 2, 2, 3 ) - pbl(2,2,1) ) / ( 2 * delv( 3 ) ) -  &
+                 porst( tloc(1), tloc(2), tloc(3) ) ** 0.33333 * (      &
+                 ( 10.0D0 *                                             &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3 ) ) ) ** 2.33333 ) / &
+                 ( 3 * satutn( tloc(1), tloc(2), tloc(3) ) ) +          &
+                 ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 3.33333 /   &
+                  satutn( tloc(1), tloc(2), tloc(3) ) ** 2 )  *         &
+                 ( sbl( 2, 2, 3 ) - sbl( 2,2,1) ) / ( 2 * delv( 3 ) ) ) * &
+                 H * D
+      ENDIF
+
+     END SUBROUTINE addGasDispersionZ
+
+     SUBROUTINE  addGasDispersion2( n, pp, ip, tloc, z, al, at, vn, betad,  &
+                                   porst, satutn, cx, cy, cz  )
+      INTEGER*4 :: n 
+      INTEGER*4, DIMENSION(:) :: tloc
+      INTEGER*4, DIMENSION(:,:) :: ip
+      REAL*8, DIMENSION(:) :: z
+      REAL*8, DIMENSION(:,:) :: pp
+      REAL*8, DIMENSION(:,:,:) :: porst, satutn
+      REAL*8 :: al, at, cx, cy, cz, vn, betad, D, H
+
+      IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
+
+        IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' ) THEN
+          H = npars%N2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2' ) THEN
+          H = npars%O2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' ) THEN
+          H = npars%CO2HenryConst
+          D = npars%SubstrateFreeAirDiffusionCoeff_m2_day
+        ENDIF
+
+        cx = z(1)*DSQRT( (2D0 * al ) / vn +                                &
+              2D0 * ( porst( tloc(1), tloc(2), tloc(3)) ** 0.333333 *      &
+                   ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 2.33333 ) &
+                   * H * D )
+        cy = z(2)*DSQRT( (2D0 * at * vn ) +                                &
+              2D0 * ( porst( tloc(1), tloc(2), tloc(3)) ** 0.333333 *      &
+                   ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 2.33333 ) &
+                   * H * D ) / betad
+        cz = z(3)*DSQRT( (2D0 * at * vn ) +                                &
+              2D0 * ( porst( tloc(1), tloc(2), tloc(3)) ** 0.333333 *      &
+                   ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 2.33333 ) &
+                   * H * D ) / ( betad * vn )
+
+      ENDIF
+     END SUBROUTINE addGasDispersion2
+
+     SUBROUTINE addGasDiffusion( n, ip, tloc, porst, satutn, moldiff, &
+                                  newmldif  )
+
+      INTEGER*4 :: n 
+      INTEGER*4, DIMENSION(:) :: tloc
+      INTEGER*4, DIMENSION(:,:) :: ip
+      REAL*8, DIMENSION(:,:,:) :: porst, satutn
+      REAL*8 :: D, H, moldiff, newmldif
+
+      IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
+           TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
+
+        IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' ) THEN
+          H = npars%N2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2' ) THEN
+          H = npars%O2HenryConst
+          D = npars%EAcceptorFreeAirDiffusionCoeff_m2_day
+
+        ELSE IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' ) THEN
+          H = npars%CO2HenryConst
+          D = npars%SubstrateFreeAirDiffusionCoeff_m2_day
+        ENDIF
+
+        newmldif = moldiff +                                                   &
+              ( porst( tloc(1), tloc(2), tloc(3)) ** 0.333333 *               &
+                   ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 3.33333 ) &
+                   / satutn( tloc(1), tloc(2), tloc(3) )                      &
+                   * H * D
+      ELSE
+        newmldif = moldiff 
+      ENDIF
+
+     END SUBROUTINE addGasDiffusion
+
+     !
+     ! to prevent negative concentration. Remove some negative mass particles
+     ! when the sum of conc and background concentration is less than zero
+     !
+     SUBROUTINE checkConc( pp, cellv, concmgl, porst, satutn, &
+                          nx, ny, nz, ns )
+
+       INTEGER*4 :: nx, ny, nz, ns, i,j,k,l, p
+       INTEGER*4 :: cnt
+!       INTEGER*4, ALLOCATABLE, TARGET :: temp(:)
+       INTEGER*4, ALLOCATABLE :: temp(:)
+       REAL*8, DIMENSION(:,:) :: pp
+       REAL*8 :: mass, cellv, cellvLiter 
+       REAL*4, DIMENSION(:,:,:,:) :: concmgl
+       REAL*8, DIMENSION(:,:,:) :: porst, satutn
+       cellvLiter = cellv * 1000 !M^3 to liter
+       DO l = 1, ns
+         DO i = 1, nx
+          DO j = 1, ny
+             DO k = 1, nz
+               cnt = 0
+               DO WHILE ( concmgl( l, i, j, k ) + npars%backgroundConc( l ) &
+                     .LT. 0.0 .AND. cnt .LE. number_of_parts( l, i, j, k ) )
+                cnt = cnt + 1
+                mass = 0.0
+                DO p = cnt + 1, number_of_parts( l, i, j, k )
+                  mass = mass + pp( part_numbers(l, i,j,k)%arr( p ), 4 )
+                END DO
+                concmgl( l, i, j, k ) = mass/ ( cellvLiter * satutn( i, j, k ) &
+                                           * porst( i, j, k ) )
+                totalremoved = totalremoved + 1
+                removed( totalremoved ) = part_numbers(l, i,j,k)%arr( cnt ) 
+                pp( part_numbers(l, i,j,k)%arr( cnt ), 1 ) = -999
+                pp( part_numbers(l, i,j,k)%arr( cnt ), 2 ) = -999
+                pp( part_numbers(l, i,j,k)%arr( cnt ), 3 ) = -999
+               END DO  ! DO WHILE
+               !
+               ! delete particles from part_numbers
+               !
+               IF ( cnt .GT. 0 ) THEN
+
+                 ALLOCATE( temp( number_of_parts( l, i, j, k ) - cnt ) )
+
+                 temp = part_numbers(l, i,j,k)%arr(                      &
+                      cnt + 1 : number_of_parts( l, i, j, k  ) )
+
+                 DEALLOCATE( part_numbers( l, i, j, k)%arr )              
+
+                 ALLOCATE( part_numbers( l, i, j, k )%arr(               &
+                                       number_of_parts(l, i, j, k ) - cnt ) )
+
+!                 part_numbers( l, i, j, k )%arr => temp
+                 part_numbers( l, i, j, k )%arr = temp
+
+                 DEALLOCATE( temp )
+                 number_of_parts( l, i, j, k ) =                         &
+                            number_of_parts(l, i, j,k ) - cnt
+               ENDIF
+             END DO
+           END DO
+         END DO
+       END DO
+
+    END SUBROUTINE checkConc
+
+     SUBROUTINE ConcToMgPerLiter( conc, nx, ny, nz, ns )
+       REAL*4, DIMENSION(:,:,:,:) :: conc
+       INTEGER*4 :: nx, ny, nz, ns, i,j,k,l
+       DO l = 1, ns
+         DO i = 1, nx
+          DO j = 1, ny
+             DO k = 1, nz
+               conc(l, i, j, k) = conc(l,i,j,k) / 1000.0 !mg/L^3 to mg/l
+             ENDDO
+          ENDDO
+         ENDDO
+       ENDDO
 ! 
+    END SUBROUTINE ConcToMgPerLiter
+
 FUNCTION ran1(idum)
 INTEGER*4 idum,IA,IM,IQ,IR,NTAB,NDIV
 REAL*8 ran1,AM,EPS,RNMX

@@ -15,9 +15,14 @@ puts $fileId "\"$run_name\"						! Title of Run"
 puts $fileId "\"$log_file\"						! Log File Name"
 
 if {$saturated == "yes"} {
-puts $fileId "1"
-} else {
-puts $fileId "0"}
+   puts $fileId "1                                            !saturated"
+ } elseif { $saturated == "const" } {
+   puts $fileId "2                                          !const V. G. pars"
+ } elseif { $saturated == "const_sat" } {
+   puts $fileId  "3                            ! const saturation and V.G. pars"
+ } else {
+   puts $fileId "0                                             !saturated"
+ }
 
 
 if {$v_type == "vbin"} {
@@ -32,10 +37,20 @@ puts $fileId "\"$ky_file\"								! Ky File Name"
 puts $fileId "\"$kz_file\"								! Kz File Name" 
 ## @RMM 8-6-08 added to make consistent w/ varsat
 if {$saturated != "yes"} {
-puts $fileId "\"$vga_file\"								! VG alpha File Name" 
-puts $fileId "\"$vgn_file\"								! VG n File Name" 
-puts $fileId "\"$sres_file\"								! VG Sres File Name"
-} 
+  if { $saturated == "const" } {
+     puts $fileId "$vga				                 ! VG alpha" 
+     puts $fileId "$vgn					         ! VG n " 
+     puts $fileId "$sres					 ! VG Sres"
+  } elseif { $saturated == "const_sat"} {
+     puts $fileId "$vga				                 ! VG alpha" 
+     puts $fileId "$vgn					         ! VG n " 
+     puts $fileId "$sat				                 ! const sat"
+  } else {
+     puts $fileId "\"$vga_file\"								! VG alpha File Name" 
+     puts $fileId "\"$vgn_file\"								! VG n File Name" 
+     puts $fileId "\"$sres_file\"								! VG Sres File Name"
+  } 
+}
 puts $fileId "$press								! head (0) or pressure (1) flag" 
 puts $fileId "\"$head_file\"								! Head File Name" 
 if {$phi_type == "constant"} {
@@ -53,9 +68,20 @@ puts $fileId "\"$kx_file\"								! Kx File Name"
 puts $fileId "\"$ky_file\"								! Ky File Name" 
 puts $fileId "\"$kz_file\"								! Kz File Name" 
 if {$saturated != "yes"} {
-puts $fileId "\"$vga_file\"								! VG alpha File Name" 
-puts $fileId "\"$vgn_file\"								! VG n File Name" 
-puts $fileId "\"$sres_file\"								! VG Sres File Name" }
+  if {$saturated == "const"} {
+     puts $fileId "$vga				                 ! VG alpha" 
+     puts $fileId "$vgn					         ! VG n " 
+     puts $fileId "$sres					 ! VG Sres"
+  } elseif { $saturated == "const_sat"} {
+     puts $fileId "$vga				                 ! VG alpha" 
+     puts $fileId "$vgn					         ! VG n " 
+     puts $fileId "$sat				                 ! const sat"
+  } else {
+    puts $fileId "\"$vga_file\"								! VG alpha File Name" 
+    puts $fileId "\"$vgn_file\"								! VG n File Name" 
+    puts $fileId "\"$sres_file\"								! VG Sres File Name" 
+  }
+}
 puts $fileId "$press								! head (0) or pressure (1) flag" 
 puts $fileId "\"$time_file\"								! File w/ timesteps " 
 puts $fileId "\"$head_list_file\"								! File w/  pressure or head" 

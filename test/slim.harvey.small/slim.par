@@ -1,6 +1,6 @@
 "slim_harvey_small EXAMPLE 1"						! Title of Run
 "slog.harvey_small.EX.1.txt"						! Log File Name
-1
+1                                            !saturated
 2							! calcing V's internally, steady state
 "/home/cui1/weltyc_common/zcui/parflow_tcl/harvey_flow_small/harvey_flow.1.out.perm_x.pfb"								! Kx File Name
 "/home/cui1/weltyc_common/zcui/parflow_tcl/harvey_flow_small/harvey_flow.1.out.perm_x.pfb"								! Ky File Name
@@ -62,7 +62,7 @@
 0.					! Detachment Coeff, Kdet, [1/d]
 0.					! Attachment Coeff, Katt, [1/d]
 0.					! Detachment Coeff, Kdet, [1/d]
-4.					! time increment until reporting particle vales, Tnext [d]
+1					! time increment until reporting particle vales, Tnext [d]
 10					! number of time increments, nt, (total runtime=nt*tnext in days)
 2				! writing out well BTC to file:
 "well.EX.1.txt"

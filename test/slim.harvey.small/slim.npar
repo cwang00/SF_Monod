@@ -9,8 +9,8 @@
 9   Ca2				        ! number to  constituent names,  [d]
 10   N2				        ! number to  constituent names,  [d]
 11   OH				        ! number to  constituent names,  [d]
-0.256 ! biomass1 concentration mg/l of porous media
-0.256 ! biomass2 concentration mg/l of porous media
+0.1 ! biomass1 concentration mg/l of porous media
+0.1 ! biomass2 concentration mg/l of porous media
 0.17 !microbial yield coefficient for biomass 1 (M biomass/ M substrate)
 0.5 !microbial yield coefficient for biomass 2 (M biomass/ M substrate)
 1.0 !emperical biomass 1 inhibition constant (M biomass/L^3 porous medium) mg/l

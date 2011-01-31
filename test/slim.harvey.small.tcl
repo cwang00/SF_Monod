@@ -205,7 +205,7 @@ set detachment_value(11) 0.
 #
 #	Set Run Timing Info
 #
-set time_increment 4.
+set time_increment 1
 set num_increments 10
 
 
@@ -494,9 +494,9 @@ set slim_pulseIC_decay_timesteps(11) 1
 set npar_file "slim.npar"
 
 #mg/l of porous media
-set biomass1_concentration_mg_l 0.256
+set biomass1_concentration_mg_l 0.1
 #mg/l of porous media
-set biomass2_concentration_mg_l 0.256
+set biomass2_concentration_mg_l 0.1
 #microbial yield coefficient for biomass 1 (M biomass/ M substrate)
 set Y1_M_biomass_M_substrate 0.17 
 #microbial yield coefficient for biomass 2 (M biomass/ M substrate)

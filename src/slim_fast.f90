@@ -9,7 +9,8 @@ SUBROUTINE slimfast(xtent,ytent,ztent,delv,al,at, &
     concprint,wellprint,momprint,confile, tnext,nt,partprint,vlocfile,         &
     partfile,nw,well,welltnext,moldiff,welltnumb, rtard,porosity,n_constituents, &
  half_life,k_att,k_det,iv_type, press,headfile,head_list_file,time_file, kxfile,kyfile,  &
- kzfile,vgafile,vgnfile,sresfile,npmax,give_up,epsi,vmult,vtk_file, saturated)
+ kzfile,vgafile,vgnfile,sresfile,npmax,give_up,epsi,vmult,vtk_file, saturated, &
+ vga_const, vgn_const, sres_sat_const)
 ! Slim-Fast Main Routine
 ! written by Reed M. Maxwell
 ! rmaxwell@mines.edu
@@ -146,7 +147,7 @@ CHARACTER (LEN=100)      :: partfile
 INTEGER*4                :: nw
 REAL*8                   :: well(20,10)
 REAL*8                   :: welltnext
-REAL*8                   :: moldiff
+REAL*8                   :: moldiff, mldif
 INTEGER*4                :: welltnumb
 REAL*8                   :: rtard(:,:,:,:)
 !REAL*8                   :: rtard(n_constituents,xtent,ytent,ztent)
@@ -217,6 +218,7 @@ CHARACTER (LEN=40) :: filename, format_desc
 CHARACTER (LEN=40),allocatable ::planefile(:)
 CHARACTER (LEN=100) :: ind_ic_file
 
+REAL*8 :: vga_const, vgn_const, sres_sat_const
 interface
 
 subroutine v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,phi,delv,nx,ny,nz,press,sat)
@@ -230,6 +232,18 @@ integer*4 :: ny
 integer*4 :: nz
 integer*4 :: press
 end subroutine v_calc
+
+subroutine v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,phi,delv,nx,ny,nz,press,sat) 
+real*8  :: v(:,:,:,:),hkx(:,:,:), hky(:,:,:),hkz(:,:,:),vga(:,:,:),vgn(:,:,:)
+character(100) :: headfile
+real*8  :: phi(:,:,:)
+real*8  :: sat(:,:,:)
+real*8 :: delv(3)
+integer*4 :: nx
+integer*4 :: ny
+integer*4 :: nz
+integer*4 :: press
+end subroutine v_calc_const_sat
 
 SUBROUTINE cbin_write(x,filename,ixlim,iylim,izlim,dx,dy,dz)
 REAL*4    :: x(:,:,:)
@@ -561,11 +575,28 @@ call pf_read(hkz(:,:,:),kzfile,xtent,ytent,ztent,delv(1),delv(2),delv(3))
 		call pf_read(vgn(:,:,:),vgnfile,xtent,ytent,ztent,delv(1),delv(2),delv(3))
 		call pf_read(sres(:,:,:),sresfile,xtent,ytent,ztent,delv(1),delv(2),delv(3))
 	end if
+
+	if(saturated == 2)then		
+	 vga=vga_const
+	 vgn=vgn_const
+	 sres=sres_sat_const
+	end if
+
+        if( saturated == 3 ) then
+	 vga=vga_const
+	 vgn=vgn_const
+         sat = sres_sat_const
+        end if
+
 hkx = hkx + 1E-15
 hky = hky + 1E-15
 hkz = hkz + 1E-15
 
-call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+if ( saturated .ne. 3 ) then
+   call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+else
+   call v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+endif
 
 end if ! calc'd vel ?
 
@@ -593,10 +624,26 @@ call pf_read(hkz(:,:,:),kzfile,xtent,ytent,ztent,delv(1),delv(2),delv(3))
 		call pf_read(sres(:,:,:),sresfile,xtent,ytent,ztent,delv(1),delv(2),delv(3))
 	end if
 	
+	if(saturated == 2)then		
+	 vga=vga_const
+	 vgn=vgn_const
+	 sres=sres_sat_const
+	end if
+
+        if( saturated == 3 ) then
+	 vga=vga_const
+	 vgn=vgn_const
+         sat = sres_sat_const
+        end if
+
 hkx = hkx + 1E-15
 hky = hky + 1E-15
 hkz = hkz + 1E-15
-call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+if ( saturated .ne. 3 ) then
+   call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+else
+   call v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+endif
 end if ! calc'd vel ?
 
 !
@@ -668,6 +715,7 @@ DO iic = 1, n_constituents
   WRITE(666,'("Z-lower:",e12.4," Z-upper:",e12.4)') zlic , zuic
 
   READ(99,*) coic
+  coic = coic * 1000.0 ! mg/l to mg/M^3
   READ(99,*) icnpart
   WRITE(666,'(" Number of Particles after this IC:",i12)') icnpart
   READ(99,*) decayic
@@ -1157,7 +1205,11 @@ t_prev = tnext
 read(16,*) tnext
 if (it > 1) then
 read(17,'(a100)') headfile
-call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+if ( saturated .ne. 3 ) then
+   call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+else
+   call v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+endif
 end if ! first timestep?
 end if ! calc'd vel ?
 
@@ -2004,12 +2056,13 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
           
           dxz = (alt/(2*delv(1))) *( ((vbl(1,3,2,2)*vbl(3,3,2,2))/vnp1) -	&
            ((vbl(1,1,2,2)*vbl(3,1,2,2))/vnm1))
+           CALL addGasDispersionX( n, p, ip, delv, tloc, fbl, porosity, sat, &
+                                   dxx )
           else
 		  dxx = 0.d0
 		  dxy = 0.d0
 		  dxz = 0.d0
           end if
-
 
           vnp1 = DSQRT(vbl(1,2,3,2)**2 + vbl(2,2,3,2)**2+vbl(3,2,3,2)**2)
           vnm1 = DSQRT(vbl(1,2,1,2)**2 + vbl(2,2,3,2)**2+vbl(3,3,1,2)**2)
@@ -2023,15 +2076,15 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
           
           dyz = (alt/(2*delv(2))) *( ((vbl(2,2,3,2)*vbl(3,2,3,2))/vnp1) -	&
            ((vbl(2,2,1,2)*vbl(3,2,1,2))/vnm1))
+           
+           CALL addGasDispersionY( n, p, ip, delv, tloc, fbl, porosity, sat, &
+                                   dyy )
 			else
 		  dyy = 0.d0
 		  dyx = 0.d0
 		  dyz = 0.d0
           end if
 
-          
-          
-          
           vnp1 = DSQRT(vbl(1,2,2,3)**2 + vbl(2,2,2,3)**2+vbl(3,2,2,3)**2)
           vnm1 = DSQRT(vbl(1,2,2,1)**2 + vbl(2,2,2,1)**2+vbl(3,3,2,1)**2)
           if(vnp1*vnm1 /= 0.) then
@@ -2045,12 +2098,13 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
           
           dzy = (alt/(2*delv(2))) *( ((vbl(3,2,2,3)*vbl(2,2,2,3))/vnp1) -	&
            ((vbl(3,2,2,1)*vbl(2,2,2,1))/vnm1))
+           CALL addGasDispersionZ( n, p, ip, delv, tloc, fbl, porosity, sat, &
+                                   dzz )
 			else
 		  dzz = 0.d0
 		  dzx = 0.d0
 		  dzy = 0.d0
           end if
-          
           
 !
 ! Let's do the random walk, starting with random number gen
@@ -2060,9 +2114,6 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
           z(2) = 2.d0*DSQRT(3.0D0)*(ran1(ir)-0.5D0)
           z(3) = 2.d0*DSQRT(3.0D0)*(ran1(ir)-0.5D0)
           
-          
-          
-          
           vn = DSQRT(vbl(1,2,2,2)**2 + vbl(2,2,2,2)**2 +vbl(3,2,2,2)**2)
           
           vxz = vbl(1,2,2,2)*vbl(3,2,2,2)
@@ -2071,8 +2122,6 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
           vyy = vbl(2,2,2,2)**2
           vxy = vbl(1,2,2,2)*vbl(2,2,2,2)
           vyz = vbl(2,2,2,2)*vbl(3,2,2,2)
-          
-          
           
           betad = DSQRT(vn**2 + vbl(2,2,2,2)**2 + 2.0D0*vxz)
           
@@ -2097,8 +2146,6 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
                + cz*(vxy-vyz)
           dz = cx*vbl(3,2,2,2) - cy*vbl(2,2,2,2) + cz*(vxx+vyy+vxz)
           
-
-
           IF((dxx+dxy+dxz) /= 0.0D0) THEN
             tdd(1) = DABS(dlimit*delv(1)/(dxx+dxy+dxz))
           END IF
@@ -2322,7 +2369,9 @@ end if
         END DO
         9194 CONTINUE
         
-        IF (((al > 0.0D0).OR.(at > 0.0D0).OR.(moldiff > 0.0D0)).AND.(iP(n,4) == 0)) THEN
+       CALL addGasDiffusion( n, ip, tloc, porosity, sat, moldiff, mldif  )
+
+        IF (((al > 0.0D0).OR.(at > 0.0D0).OR.(mldif > 0.0D0)).AND.(iP(n,4) == 0)) THEN
 ! Okay, now we add RW component and correction factor to our current
 !  position
 !
@@ -2330,9 +2379,9 @@ end if
           z(5) = 2.d0*DSQRT(3.0D0)*(ran1(ir)-0.5D0)
           z(6) = 2.d0*DSQRT(3.0D0)*(ran1(ir)-0.5D0)
           
-          ddx = z(4) * DSQRT(moldiff*2.0D0*tad(4)) *dble(iP(n,2))
-          ddy = z(5) * DSQRT(moldiff*2.0D0*tad(4)) *dble(iP(n,2))
-          ddz = z(6) * DSQRT(moldiff*2.0D0*tad(4)) *dble(iP(n,2))
+          ddx = z(4) * DSQRT(mldif*2.0D0*tad(4)) *dble(iP(n,2))
+          ddy = z(5) * DSQRT(mldif*2.0D0*tad(4)) *dble(iP(n,2))
+          ddz = z(6) * DSQRT(mldif*2.0D0*tad(4)) *dble(iP(n,2))
           
          
 ! we are adding a fix for unsat retardation
@@ -2753,7 +2802,13 @@ END DO ! the big particle loop:  DO  n = 1, np
     WRITE(666,*) 'Current number of particles: ', np
     flush(666)
 
-  CALL countParticles( p,ip, np, xtent, ytent, ztent, n_constituents, delv )
+  CALL countParticles( p,ip, np, xtent, ytent, ztent, n_constituents, delv, &
+       tnext )
+
+  CALL ConcToMgperLiter( c, xtent, ytent, ztent, n_constituents )
+
+  CALL    checkConc( p, cellv, c, porosity, sat, xtent, ytent, ztent,      &
+                                                            n_constituents )  
 
   CALL maxMassAllCellSpec( p, np, ip )
 

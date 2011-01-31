@@ -77,7 +77,7 @@ IMPLICIT NONE
 REAL*8   vmult,   al,at,tnext, delv,  &
     moldiff, deltx, delty, deltz,    &
 	  welltnext,  wells, kd_temp,	&
-	  phi_const, epsi
+	  phi_const, epsi, vga_const, vgn_const, sres_sat_const
 
 INTEGER*4   backsl, i,       &
     concprint,welltnumb,     &
@@ -219,6 +219,14 @@ if (iv_type == 2) then
 		read(99,*) vgafile
 		read(99,*) vgnfile
 		read(99,*) sresfile
+        else if ( saturated == 2 ) then
+		read(99,*) vga_const
+		read(99,*) vgn_const
+		read(99,*) sres_sat_const
+        else if ( saturated == 3 ) then
+		read(99,*) vga_const
+		read(99,*) vgn_const
+		read(99,*) sres_sat_const
 	end if
 ! press= 0 reading hydraulic head potential
 ! press= 1 reading pressure (and convert internally
@@ -240,6 +248,14 @@ if (iv_type == 3) then
 		read(99,*) vgafile
 		read(99,*) vgnfile
 		read(99,*) sresfile
+        else if ( saturated == 2 ) then
+		read(99,*) vga_const
+		read(99,*) vgn_const
+		read(99,*) sres_sat_const
+        else if ( saturated == 3 ) then
+		read(99,*) vga_const
+		read(99,*) vgn_const
+		read(99,*) sres_sat_const
 	end if
 ! press= 0 reading hydraulic head potential
 ! press= 1 reading pressure (and convert internally
@@ -601,7 +617,7 @@ CALL slimfast(xtent,ytent,ztent,delv,al,at,                            &
     partfile,nw,wells,welltnext,moldiff,welltnumb, r,phi,n_constituents, &
 	half_life,k_att,k_det,iv_type,press, headfile,head_list_file, time_file, &
 	 kxfile,kyfile,kzfile,vgafile,vgnfile,sresfile,npmax, give_up, epsi,vmult, &
-     vtk_file,saturated)
+     vtk_file,saturated, vga_const, vgn_const, sres_sat_const)
 	
 
 print*, 'finished'

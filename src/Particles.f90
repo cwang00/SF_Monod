@@ -3,6 +3,7 @@
 MODULE Particles
 
    USE NTransport
+   USE VGTransport
 
    IMPLICIT NONE
 
@@ -54,9 +55,9 @@ MODULE Particles
          x = IDINT( pp( p, 1 ) / delv( 1 ) ) + 1
          y = IDINT( pp( p, 2 ) / delv( 2 ) ) + 1
          z = IDINT( pp( p, 3 ) / delv( 3 ) ) + 1
-         IF ( ip(p,2) .EQ. 1 .AND. x .GT. 0 .AND. y .GT. 0 .AND. z .GT. 0  &
-             .AND. x .LE. nx .AND. y .LE. ny .AND. z .LE. nz .AND.        &
-              pp( p, 7 ) .LE. tnext ) THEN
+         IF ( ( ip(p,2) .EQ. 1 ) .AND. ( x .GT. 0 ) .AND. ( y .GT. 0 ) .AND. &
+              ( z .GT. 0 )  .AND. ( x .LE. nx ) .AND. ( y .LE. ny ) .AND.    &
+              ( z .LE. nz ) .AND. ( pp( p, 7 ) .LE. tnext ) ) THEN
            number_of_parts( ip( p, 1 ), x, y, z ) =                           &
               number_of_parts( ip( p, 1 ), x, y, z ) + 1
          ENDIF
@@ -84,18 +85,18 @@ MODULE Particles
          x = IDINT( pp( p, 1 ) / delv( 1 ) ) + 1
          y = IDINT( pp( p, 2 ) / delv( 2 ) ) + 1
          z = IDINT( pp( p, 3 ) / delv( 3 ) ) + 1
-         IF ( ip(p,2) .EQ. 1 .AND. x .GT. 0 .AND. y .GT. 0 .AND. z .GT. 0 &
-             .AND. x .LE. nx .AND. y .LE. ny .AND. z .LE. nz .AND.        &
-            pp( p, 7 ) .LE. tnext ) THEN
+         IF ( ( ip(p,2) .EQ. 1 ) .AND. ( x .GT. 0 ) .AND. ( y .GT. 0 ) .AND. &
+             ( z .GT. 0 ) .AND. ( x .LE. nx ) .AND. ( y .LE. ny ) .AND.      &
+             ( z .LE. nz ) .AND. ( pp( p, 7 ) .LE. tnext ) ) THEN
            pcount( ip(p, 1), x, y, z ) = pcount( ip(p, 1), x, y, z ) + 1
            part_numbers( ip(p, 1), x, y, z )%arr( pcount( ip(p, 1), x, y,z ))&
                                                                          = p
          ENDIF
          !
          ! recycle particles
-         IF ( ip(p,2) .EQ. 1 .AND. (                                  &
+         IF ( ( ip(p,2) .EQ. 1 ) .AND. (                              &
              ( x .LE. 0 .OR. y .LE. 0 .OR. z .LE.  0 ) ) .AND.        &
-               pp(p, 7) .LE. tnext  ) THEN
+              ( pp(p, 7) .LE. tnext ) ) THEN
            IF( ALL(removed(1:totalremoved) .NE. p ) ) THEN
              totalremoved = totalremoved + 1
              removed( totalremoved ) = p 
@@ -180,6 +181,7 @@ MODULE Particles
         
           IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
             CALL VODEReactionRatesAtCell( conc, i, j, k, REAL(dt_day), rates )
+!            CALL VGReactRateAtCell( conc, i, j, k, REAL(dt_day), rates )
             DO l = 1, ns
 !              CALL partNumbersAtCellSpec( partNumber,                        &
 !                                         l, i, j, k, pp, ip, np,             &
@@ -213,11 +215,14 @@ MODULE Particles
                  rate = rates( 10 )
               ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'OH' ) THEN
                  rate = rates( 11 )
+              ELSE IF ( TRIM(vgpars%SpeciesNames( l ) ) .eq. 'VG' ) THEN
+                 rate = rates( 1 )
               ELSE
+
                  PRINT*, 'Unknow species naem ', npars%SpeciesNames(l)
 
               ENDIF
-              mass = rate * delv(1) * delv(2) * delv(3)                     &
+              mass = rate * delv(1) * delv(2) * delv(3) * 1000.0           &
                         * sat( i,j , k)  * porosity( i,j,k)
 
               ! 
@@ -235,7 +240,7 @@ MODULE Particles
               ENDIF
 
               backgroundmass = npars%backgroundConc( l )                    &
-                           * delv(1) * delv(2) * delv(3)                    &
+                           * delv(1) * delv(2) * delv(3) * 1000.0           &
                         * sat( i,j , k)  * porosity( i,j,k)
 
               IF( number_of_parts( l, i, j, k ) == 0 .AND. mass > 0.0) THEN
@@ -607,9 +612,9 @@ MODULE Particles
        END DO
      
        IF ( .NOT. found ) THEN
-         PRINT*, 'NO particles are found in cell( ', x, ', ', y, ', ', z, ')' 
-         PRINT*, 'for species ', s 
-         PRINT*, 'when creating new particles, set time of particle to zero!' 
+!         PRINT*, 'NO particles are found in cell( ', x, ', ', y, ', ', z, ')' 
+!         PRINT*, 'for species ', s 
+!         PRINT*, 'when creating new particles, set time of particle to zero!' 
 
        ENDIF
      END FUNCTION minMassCellSpec
@@ -757,7 +762,7 @@ MODULE Particles
 !         ENDIF  
 !      END DO
 
-      DO i = 1, TotalNumberOfSpecies
+      DO i = 1, VGTotalNumberOfSpecies
         IF ( number_of_parts(i, x, y, z ) > 0 ) THEN
            found = .TRUE.
            timeCellAllSpec = pp( part_numbers(i, x, y, z)%arr(1), 7 )
@@ -766,8 +771,8 @@ MODULE Particles
       ENDDO
 
       IF ( .NOT. found ) THEN
-         PRINT*, 'NO particles are found in cell( ', x, ', ', y, ', ', z, ')' 
-         PRINT*, 'when creating new particles, set time of particle to zero!' 
+ !        PRINT*, 'NO particles are found in cell( ', x, ', ', y, ', ', z, ')' 
+ !        PRINT*, 'when creating new particles, set time of particle to zero!' 
       ENDIF
 
      END FUNCTION timeCellAllSpec
@@ -1356,6 +1361,39 @@ MODULE Particles
        ENDDO
 ! 
     END SUBROUTINE ConcToMgPerLiter
+
+    SUBROUTINE updateConc( conc, pp, ipp, np, delc, domax, sat, porosity, &
+                                                      Rtard, tnext )
+       REAL*4, DIMENSION(:,:,:,:) :: conc
+       REAL*8, DIMENSION(:,:,:,:) :: Rtard
+       REAL*8, DIMENSION(:,:,:)   :: sat, porosity
+       REAL*8, DIMENSION(:,:)     :: pp
+       REAL*8, DIMENSION(:)       ::    delc
+       REAL*8                     :: tnext, Rstar, cellv
+       INTEGER*4, DIMENSION(:,:)  :: ipp
+       INTEGER*4, DIMENSION(:)    :: domax
+       INTEGER*4                  :: np, i, x, y, z
+
+       cellv = delc(1) * delc(2) * delc(3) * 1000.0 !M^3 to L 
+       conc = 0.0
+       DO i = 1, np
+        x = IDINT( pp( i, 1 ) / delc( 1 ) ) + 1
+        y = IDINT( pp( i, 2 ) / delc( 2 ) ) + 1
+        z = IDINT( pp( i, 3 ) / delc( 3 ) ) + 1
+
+        IF( ( x .GE. 1 .AND. x .LE. domax(1) ) .AND.    &
+            ( y .GE. 1 .AND. y .LE. domax(2) ) .AND.    &
+            ( z .GE. 1 .AND. z .LE. domax(3) ) .AND.    &
+            ( pp( i, 7 ) .LE. tnext ) ) THEN
+
+          rstar = 1.d0 + ( Rtard( ipp( i, 1 ), x, y, z )- 1.d0 )/ sat( x, y, z )
+          conc( ipp(i,1), x, y, z) = conc( ipp( i, 1 ), x, y, z ) +         &
+                SNGL( dble( ipp( i, 2 ) ) * pp( i, 4 )            /         &
+                ( cellv * sat( x, y, z) * porosity( x, y, z) * Rstar ) )
+        ENDIF 
+       ENDDO
+    END SUBROUTINE updateConc
+
 
 FUNCTION ran1(idum)
 INTEGER*4 idum,IA,IM,IQ,IR,NTAB,NDIV

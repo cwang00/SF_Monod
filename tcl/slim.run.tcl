@@ -27,8 +27,24 @@ if {$saturated == "yes"} {
 
 if {$v_type == "vbin"} {
 puts $fileId "1							! reading V's from vbin type file"
-puts $fileId "\"$vel_file\"					! Vbin File Name" }
-
+puts $fileId "\"$vel_file\"					! Vbin File Name"
+if {$saturated != "yes"} {
+  if { $saturated == "const" } {
+     puts $fileId "$vga				                 ! VG alpha" 
+     puts $fileId "$vgn					         ! VG n " 
+     puts $fileId "$sres					 ! VG Sres"
+  } elseif { $saturated == "const_sat"} {
+     puts $fileId "$vga				                 ! VG alpha" 
+     puts $fileId "$vgn					         ! VG n " 
+     puts $fileId "$sat				                 ! const sat"
+  } else {
+     puts $fileId "\"$vga_file\"								! VG alpha File Name" 
+     puts $fileId "\"$vgn_file\"								! VG n File Name" 
+     puts $fileId "\"$sres_file\"								! VG Sres File Name"
+  } 
+ }
+ puts $fileId "$phi									! phi value \[-\]"
+}
 
 if {$v_type == "calc"} {
 puts $fileId "2							! calcing V's internally, steady state"
@@ -104,8 +120,7 @@ puts $fileId "$num_constituents 				! number of constituents"
 for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
 puts $fileId "$half_life($jj)				        ! radioactive half life,  \[d\]" 
 }
-#for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
-for {set jj 1} {$jj <= 11} {incr jj 1} {
+for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
 puts $nfileId "$jj   $constituent_names($jj)				        ! number to  constituent names,  \[d\]" 
 }
 puts $fileId "$alpha_l						! longitudinal disersivity, alpha_l, \[m\]"

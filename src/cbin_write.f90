@@ -42,7 +42,7 @@ debug = 0
 !
 
 OPEN(15,FILE=trim(filename),FORM='unformatted',  &
-    access='stream',convert='BIG_ENDIAN')
+    access='stream', status='replace',convert='BIG_ENDIAN')
 
 !
 !      Calc domain bounds

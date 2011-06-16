@@ -945,7 +945,7 @@ MODULE NTransport
       LIW = 43  ! 30 + NEQ
       MF = 21
       IWORK(5) = 0 
-      IWORK(6) = 10000
+      IWORK(6) = 50000
       IWORK(7) = 0
       IWORK(8) = 0
       IWORK(9) = 0
@@ -957,12 +957,17 @@ MODULE NTransport
       RWORK(9) = 0.0
       RWORK(10) = 0.0
 !      WRITE(*,*) ( Y(I), I=1, 13 )
-      CALL SVODE(FREACT,NEQ,Y,T,TOUT,ITOL,RTOL,ATOL,ITASK,ISTATE,   &
+
+      DO 
+       CALL SVODE(FREACT,NEQ,Y,T,TOUT,ITOL,RTOL,ATOL,ITASK,ISTATE,   &
                  IOPT,RWORK,LRW,IWORK,LIW,JACRACT,MF,RPAR,IPAR)
 !      WRITE(6,20)T,Y(1),Y(2),Y(3),Y(4),Y(5),Y(6),Y(7),Y(8),Y(9), &
 !                     Y(10),Y(11), Y(12), Y(13)
 !  20  FORMAT(' At t =',D12.4,'   y =',13D14.6)
-      IF (ISTATE .LT. 0 ) GO TO 80
+        IF (ISTATE .LT. -1 ) GO TO 80
+        IF ( ISTATE .GT. 1 ) EXIT
+        IF ( ISTATE .EQ. -1 ) ISTATE = 2  
+       ENDDO  
 !      WRITE(6,60) IWORK(11),IWORK(12),IWORK(13),IWORK(19),         &
 !                 IWORK(20),IWORK(21),IWORK(22)
 !  60  FORMAT(/' No. steps =',I4,'   No. f-s =',I4,                 &
@@ -986,10 +991,10 @@ MODULE NTransport
       NitrifierConc( xloc, yloc, zloc ) = Y(12)      ! X1
       DenitrifierConc( xloc, yloc, zloc ) = Y(13)    ! X2
       RETURN
-  80  WRITE(6,90)ISTATE
+  80  WRITE(6,90)ISTATE, xloc, yloc, zloc
       rate = 0.0 
 
-  90  FORMAT(///' Error halt: ISTATE =',I3)
+  90  FORMAT(///' Error halt: ISTATE =',I3, ' Cell (', I4, ', ', I4, ', ', I4, ')' )
 !      STOP
       RETURN
       END SUBROUTINE
@@ -1609,8 +1614,7 @@ PD(8,4) = 0
 PD(8,5) = 0
 PD(8,6) = npars%K_b_HCO3_1_mday*OH
 PD(8,7) = 0
-PD(8,8) = -npars%K_f_HCO3_1_day-Ca*npars%Acc_1_cm*npars%K_b_&
-3_cm_mday
+PD(8,8) = -npars%K_f_HCO3_1_day-Ca*npars%Acc_1_cm*npars%K_b_3_cm_mday
 PD(8,9) = -CO3*npars%Acc_1_cm*npars%K_b_3_cm_mday
 PD(8,10) = 0
 PD(8,11) = HCO3*npars%K_b_HCO3_1_mday

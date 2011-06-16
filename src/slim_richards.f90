@@ -13,7 +13,7 @@ PROGRAM react_fast
 ! copyright (c) 1994-2010
 !
 !
-! version R2.0, variable retardation (by constituent), decay/ingrowth, matrix diffusion
+! version V4.0, variable retardation (by constituent), decay/ingrowth, matrix diffusion
 !
 ! Notable features are:
 !  Particle-by-particle tracking, allowing each particle to move at
@@ -182,8 +182,6 @@ END INTERFACE
 ! initialize n_constits to 1
 n_constituents  = 1
 
-!CALL STIFFEX()
-
 READ(5,97) inputfile
 READ(5,97) ninputfile
 OPEN(99,FILE=inputfile,STATUS='old')
@@ -201,12 +199,31 @@ READ(99,*) logfile
 READ(99,*) saturated
 ! velocity input type
 read(99,*) iv_type
-if (iv_type == 1) READ(99,*) velfile
+
+phi_const = 1.0d0
+
+if (iv_type == 1) then
+READ(99,*) velfile
+phi_type = 1
+	if (saturated == 0) then 
+		read(99,*) vgafile
+		read(99,*) vgnfile
+		read(99,*) sresfile
+        else if ( saturated == 2 ) then
+		read(99,*) vga_const
+		read(99,*) vgn_const
+		read(99,*) sres_sat_const
+        else if ( saturated == 3 ) then
+		read(99,*) vga_const
+		read(99,*) vgn_const
+		read(99,*) sres_sat_const
+	end if
+	read(99,*) phi_const
+end if
 
 97 FORMAT(a100)
 98 FORMAT(a20)
 
-phi_const = 1.0d0
 
 if (iv_type == 2) then
 	read(99,*) kxfile
@@ -587,9 +604,9 @@ DO   kk = 1, nw
 END DO
 
 
+!CALL ReadVGTransPars( ninputfile, xtent, ytent, ztent )
 CALL ReadNTransPars( ninputfile, xtent, ytent, ztent )
 
-!CALL RACT() 
 
 vmult = 1.0D0
 IF (backsl == 1) vmult = -1.0D0

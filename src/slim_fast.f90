@@ -1,6 +1,7 @@
 MODULE SLIM_FAST
 
 USE NTransport
+USE VGTransport
 USE Particles
 
 CONTAINS
@@ -205,7 +206,7 @@ INTEGER*4 l,i,j,k,n,ploc(4),np,domax(4),numax,loc3p,it, &
     passes, locstuck(5),  itemp, wc,av(5), &
     tp1,tp2,tp3, tloc(5), inbounds, wellfile
 
-integer*4 ir, icpartdiv, nr
+integer*4 ir, icpartdiv, nr, mp
 
 integer, allocatable :: ipwell(:,:)
 
@@ -219,6 +220,7 @@ CHARACTER (LEN=40),allocatable ::planefile(:)
 CHARACTER (LEN=100) :: ind_ic_file
 
 REAL*8 :: vga_const, vgn_const, sres_sat_const
+REAL*8 :: oldloc(3), origloc(3)
 interface
 
 subroutine v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,phi,delv,nx,ny,nz,press,sat)
@@ -551,6 +553,14 @@ DO i = 1,nplane
   
 END DO
 
+if (iv_type == 1) then
+        if( saturated == 3 ) then
+	 vga=vga_const
+	 vgn=vgn_const
+         sat = sres_sat_const
+        end if
+end if ! iv_type == 1
+
 ! call v_calc early for sats for IC
 ! @RMM 8-6-08 - added to make SS vel consistent w/ var sat/transient
 ! call v_calc for steady state velocity
@@ -735,7 +745,7 @@ DO iic = 1, n_constituents
   
   WRITE(666,'(" C0 for Pulse Input [ppm]: ",f7.3)')  coic
   WRITE(666,'(" Initial mass of each particle [g]: ",e12.3)') (coic*pulse_vol*porosity(1,1,1))/DBLE(icnpart)
-  
+  write(666,*) 'porosity', porosity(1,1,1)
   WRITE(666,'(" pulse location x1, x2 [m]:",f8.4,",",f8.4)') xlic,xuic
   WRITE(666,'(" pulse location y1, y2 [m]:",f8.4,",",f8.4)') ylic,yuic
   WRITE(666,'(" pulse location z1, z2 [m]:",f8.4,",",f8.4)') zlic, zuic
@@ -944,7 +954,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
     END DO
   END DO
   CLOSE (123)
-  
+ 
   PRINT*,' loop thru ic'
   DO kk = 1, kcat
     DO jj = 1, jcat
@@ -1007,7 +1017,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
   END DO  !kk
   
  END IF ! ic = 4
-END DO  ! DO iic = 1, n_constituents
+ END DO  ! DO iiC = 1, n_constituents
 
 print*, 'de allocating'
 !deallocate(ic_cat_num)
@@ -1191,7 +1201,7 @@ if (iv_type == 1) then
   
 ! convert seconds to days
   t_prev = tnext
-  tnext = timenext /86400.d0
+  tnext = timenext !/86400.d0
 end if
 if (iv_type == 2) then
 	timenext = tnext + t_big_step
@@ -1205,11 +1215,7 @@ t_prev = tnext
 read(16,*) tnext
 if (it > 1) then
 read(17,'(a100)') headfile
-if ( saturated .ne. 3 ) then
-   call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
-else
-   call v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
-endif
+call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
 end if ! first timestep?
 end if ! calc'd vel ?
 
@@ -1235,15 +1241,19 @@ end if ! calc'd vel ?
 !reverse velocities if needed
 ! 
  V = V*vmult 
+! mp = np
 !
 ! Big Particle loop.  This guy is where all the particles get moved.
 ! This is also where SLIM_FAST can be most easily parallelized.
 !
-
   DO  n = 1, np
 
 ! continue statement for well recycling
 1999 continue
+
+origloc( 1 ) = p(n,1)
+origloc( 2 ) = p(n,2)
+origloc( 3 ) = p(n,3)
     IF (partprint == 1) THEN
       IF ((p(n,1) > 0.).AND.(p(n,2) > 0.).AND.(p(n,3) > 0.))  &
       pdist = 0.0d0
@@ -1929,22 +1939,22 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 !
 ! set up the capital F's
 !
-!         tloc(1) = INT(ploc(1) + f(1) - 0.5)
-!         tloc(2) = INT(ploc(2) + f(2) - 0.5)
-!         tloc(3) = INT(ploc(3) + f(3) - 0.5)
+         tloc(1) = INT(ploc(1) + f(1) - 0.5)
+         tloc(2) = INT(ploc(2) + f(2) - 0.5)
+         tloc(3) = INT(ploc(3) + f(3) - 0.5)
 
-!          fbl(1) = ploc(1) + f(1) - 0.5 - DBLE(tloc(1))
-!          fbl(2) = ploc(2) + f(2) - 0.5 - DBLE(tloc(2))
-!          fbl(3) = ploc(3) + f(3) - 0.5 - DBLE(tloc(3))
+          fbl(1) = ploc(1) + f(1) - 0.5 - DBLE(tloc(1))
+          fbl(2) = ploc(2) + f(2) - 0.5 - DBLE(tloc(2))
+          fbl(3) = ploc(3) + f(3) - 0.5 - DBLE(tloc(3))
 
+!@RMM changed location of blinear interp per Toru's email
+!          tloc(1) = ploc(1) 
+!          tloc(2) = ploc(2) 
+!          tloc(3) = ploc(3) 
 
-          tloc(1) = ploc(1) 
-          tloc(2) = ploc(2) 
-          tloc(3) = ploc(3) 
-
-          fbl(1) = f(1) 
-          fbl(2) = f(2) 
-          fbl(3) = f(3) 
+!          fbl(1) = f(1) 
+!          fbl(2) = f(2) 
+!          fbl(3) = f(3) 
 
           
 !
@@ -2002,25 +2012,25 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
 !              ! add in test for boundary valuem otherwise wire vel to zero
 !             if (tp3>=1) then
                 vbl(1,i,j,k) = ( 1.d0/( porosity(tloc(1),tloc(2),tloc(3))*sat(tloc(1),tloc(2),tloc(3))*Rstar ))*       &
-				    (1.0D0-fbl(2))*(1.0D0-fbl(3))*(porosity(tp1,tp2,tp3)*sat(tp1,tp2,tp3)*v(1,tp1,tp2,tp3)) +  &
+				    ((1.0D0-fbl(2))*(1.0D0-fbl(3))*(porosity(tp1,tp2,tp3)*sat(tp1,tp2,tp3)*v(1,tp1,tp2,tp3)) +  &
                     (fbl(2))*(1.0D0-fbl(3))* (porosity(tp1,tp2+1,tp3)*sat(tp1,tp2+1,tp3)*v(1,tp1,tp2+1,tp3)) +     &
                     (1.0D0-fbl(2))*(fbl(3))*(porosity(tp1,tp2,tp3+1)*sat(tp1,tp2,tp3+1)*v(1,tp1,tp2,tp3+1)) +      &
-                    (fbl(2))*(fbl(3))*(porosity(tp1,tp2+1,tp3+1)*sat(tp1,tp2+1,tp3+1)*v(1,tp1,tp2+1,tp3+1))
+                    (fbl(2))*(fbl(3))*(porosity(tp1,tp2+1,tp3+1)*sat(tp1,tp2+1,tp3+1)*v(1,tp1,tp2+1,tp3+1)))
 
                 vbl(1,i,j,k) = vbl(1,i,j,k)/scxyz(1,tloc(1))
 
                 vbl(2,i,j,k) = ( 1.d0/(porosity(tloc(1),tloc(2),tloc(3))*sat(tloc(1),tloc(2),tloc(3))*Rstar ))*       &
-				    (1.0D0-fbl(1))*(1.0D0-fbl(3))*(porosity(tp1,tp2,tp3)*sat(tp1,tp2,tp3)*v(2,tp1,tp2,tp3)) +  &
+				    ((1.0D0-fbl(1))*(1.0D0-fbl(3))*(porosity(tp1,tp2,tp3)*sat(tp1,tp2,tp3)*v(2,tp1,tp2,tp3)) +  &
                     (fbl(1))*(1.0D0-fbl(3))*(porosity(tp1+1,tp2,tp3)*sat(tp1+1,tp2,tp3)*v(2,tp1+1,tp2,tp3)) +      &
                     (1.0D0-fbl(1))*(fbl(3))*(porosity(tp1,tp2,tp3+1)*sat(tp1,tp2,tp3+1)*v(2,tp1,tp2,tp3+1)) +      &
-                    (fbl(1))*(fbl(3))*(porosity(tp1+1,tp2,tp3+1)*sat(tp1+1,tp2,tp3+1)*v(2,tp1+1,tp2,tp3+1))
+                    (fbl(1))*(fbl(3))*(porosity(tp1+1,tp2,tp3+1)*sat(tp1+1,tp2,tp3+1)*v(2,tp1+1,tp2,tp3+1)))
                 
                 vbl(2,i,j,k) = vbl(2,i,j,k)/scxyz(2,tloc(2))
                 vbl(3,i,j,k) = ( 1.d0/( porosity(tloc(1),tloc(2),tloc(3))*sat(tloc(1),tloc(2),tloc(3))*Rstar ))*       &
-				    (1.0D0-fbl(1))*(1.0D0-fbl(2))*(porosity(tp1,tp2,tp3)*sat(tp1,tp2,tp3)*v(3,tp1,tp2,tp3)) +  &
+				    ((1.0D0-fbl(1))*(1.0D0-fbl(2))*(porosity(tp1,tp2,tp3)*sat(tp1,tp2,tp3)*v(3,tp1,tp2,tp3)) +  &
                     (fbl(1))*(1.0D0-fbl(2))*(porosity(tp1+1,tp2,tp3)*sat(tp1+1,tp2,tp3)*v(3,tp1+1,tp2,tp3)) +      &
                     (1.0D0-fbl(1))*(fbl(2))*(porosity(tp1,tp2+1,tp3)*sat(tp1,tp2+1,tp3)*v(3,tp1,tp2+1,tp3)) +      &
-                    (fbl(1))*(fbl(2))*(porosity(tp1+1,tp2+1,tp3)*sat(tp1+1,tp2+1,tp3)*v(3,tp1+1,tp2+1,tp3))
+                    (fbl(1))*(fbl(2))*(porosity(tp1+1,tp2+1,tp3)*sat(tp1+1,tp2+1,tp3)*v(3,tp1+1,tp2+1,tp3)))
 
                 vbl(3,i,j,k) = vbl(3,i,j,k)/scxyz(3,tloc(3))
  !            else
@@ -2089,14 +2099,15 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
           vnm1 = DSQRT(vbl(1,2,2,1)**2 + vbl(2,2,2,1)**2+vbl(3,3,2,1)**2)
           if(vnp1*vnm1 /= 0.) then
           alt = al - at
+!@RMM dzz term, delv(2) changed to delv(3) per Toru's email
           
-          dzz = (alt/(2*delv(2))) *( ((vbl(3,2,2,3)**2)/vnp1) -		&
+          dzz = (alt/(2*delv(3))) *( ((vbl(3,2,2,3)**2)/vnp1) -		&
            ((vbl(3,2,2,3)**2)/vnm1))  + (at/(2*delv(2)))*(vnp1 - vnm1)
           
-          dzx = (alt/(2*delv(2))) *( ((vbl(3,2,2,3)*vbl(1,2,2,3))/vnp1) -	&
+          dzx = (alt/(2*delv(3))) *( ((vbl(3,2,2,3)*vbl(1,2,2,3))/vnp1) -	&
            ((vbl(3,2,2,1)*vbl(1,2,2,3))/vnm1))
           
-          dzy = (alt/(2*delv(2))) *( ((vbl(3,2,2,3)*vbl(2,2,2,3))/vnp1) -	&
+          dzy = (alt/(2*delv(3))) *( ((vbl(3,2,2,3)*vbl(2,2,2,3))/vnp1) -	&
            ((vbl(3,2,2,1)*vbl(2,2,2,1))/vnm1))
            CALL addGasDispersionZ( n, p, ip, delv, tloc, fbl, porosity, sat, &
                                    dzz )
@@ -2114,6 +2125,9 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
           z(2) = 2.d0*DSQRT(3.0D0)*(ran1(ir)-0.5D0)
           z(3) = 2.d0*DSQRT(3.0D0)*(ran1(ir)-0.5D0)
           
+ ! @RMM changed random number gen from ran1 to ran         
+          
+          
           vn = DSQRT(vbl(1,2,2,2)**2 + vbl(2,2,2,2)**2 +vbl(3,2,2,2)**2)
           
           vxz = vbl(1,2,2,2)*vbl(3,2,2,2)
@@ -2122,6 +2136,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
           vyy = vbl(2,2,2,2)**2
           vxy = vbl(1,2,2,2)*vbl(2,2,2,2)
           vyz = vbl(2,2,2,2)*vbl(3,2,2,2)
+          
+          
           
           betad = DSQRT(vn**2 + vbl(2,2,2,2)**2 + 2.0D0*vxz)
           
@@ -2135,12 +2151,12 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
             cz = 0.
           END IF
 
-! grad phi test hack
-!			grad_phi_x = (porosity(tloc(1)+1,tloc(2),tloc(3)) - porosity(tloc(1)-1,tloc(2),tloc(3)))/(2.d0*delv(1))
-!            grad_phi_y = (porosity(tloc(1),tloc(2)+1,tloc(3)) - porosity(tloc(1),tloc(2),tloc(3)))/delv(2)
-!            grad_phi_z = (porosity(tloc(1),tloc(2),tloc(3)+1) - porosity(tloc(1),tloc(2),tloc(3)))/delv(3)
-!			grad_phi_x = grad_phi_x*al*vbl(1,2,2,2)
 
+            cx = z(1)*DSQRT((2.0D0*al)/vn)
+            cy = z(2)*DSQRT(2.0D0*at*vn)/betad
+            cz = z(3)*DSQRT(2.0D0*at*vn)/(betad*vn)
+  
+                      
           dx = cx*vbl(1,2,2,2) - cy*vbl(2,2,2,2) - cz*(vyy+vzz+vxz)
           dy = cx*vbl(2,2,2,2) + cy*(vbl(1,2,2,2)+vbl(3,2,2,2))	&
                + cz*(vxy-vyz)
@@ -2224,6 +2240,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
 		END IF
 !        tad(4) = DMIN1(tad(1),tad(2),tad(3),trgp,tdd(1),tdd(2),tdd(3),dt_lamda,10.) 
         tad(4) = DMIN1(tad(1),tad(2),tad(3),trgp,tdd(1),tdd(2),tdd(3),tdd(4),tdd(5),tdd(6),t_att,dt_lamda) 
+        ! change @RMM in limit for dt for dispersion
+        tad(4) = DMIN1(tad(1),tad(2),tad(3),trgp,t_att,dt_lamda) 
 
 		if(tad(4) == 0.) tad(4) = tad(4) + epsi*10.D0
 
@@ -2231,7 +2249,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
 		  if( K_det(iP(n,1),ploc(1),ploc(2),ploc(3)) == 0.D0 ) then
 		    tad(4) = trgp
 		  else
-		    tad(4) = DMIN1(0.05D0/K_det(iP(n,1),ploc(1),ploc(2),ploc(3)),trgp,(tnext-t_prev)/25.D0,dt_lamda)
+		    tad(4) = DMIN1(0.05D0/K_det(iP(n,1),ploc(1),ploc(2),ploc(3)),trgp,dt_lamda)
 !		    tad(4) = DMIN1(trgp,tnext/100.D0)
          end if
 		end if
@@ -2267,6 +2285,9 @@ end if
 !
 ! Move them darn particles
 !
+        oldloc(1) = p( n, 1 )
+        oldloc(2) = p( n, 2 )
+        oldloc(3) = p( n, 3 )
         DO  l = 1, numax
           IF (av(l) == 0) THEN
             
@@ -2371,7 +2392,7 @@ end if
         
        CALL addGasDiffusion( n, ip, tloc, porosity, sat, moldiff, mldif  )
 
-        IF (((al > 0.0D0).OR.(at > 0.0D0).OR.(mldif > 0.0D0)).AND.(iP(n,4) == 0)) THEN
+        IF (((al > 0.0D0).OR.(at > 0.0D0).OR.(moldiff > 0.0D0)).AND.(iP(n,4) == 0)) THEN
 ! Okay, now we add RW component and correction factor to our current
 !  position
 !
@@ -2379,9 +2400,9 @@ end if
           z(5) = 2.d0*DSQRT(3.0D0)*(ran1(ir)-0.5D0)
           z(6) = 2.d0*DSQRT(3.0D0)*(ran1(ir)-0.5D0)
           
-          ddx = z(4) * DSQRT(mldif*2.0D0*tad(4)) *dble(iP(n,2))
-          ddy = z(5) * DSQRT(mldif*2.0D0*tad(4)) *dble(iP(n,2))
-          ddz = z(6) * DSQRT(mldif*2.0D0*tad(4)) *dble(iP(n,2))
+          ddx = z(4) * DSQRT(moldiff*2.0D0*tad(4)) *dble(iP(n,2))
+          ddy = z(5) * DSQRT(moldiff*2.0D0*tad(4)) *dble(iP(n,2))
+          ddz = z(6) * DSQRT(moldiff*2.0D0*tad(4)) *dble(iP(n,2))
           
          
 ! we are adding a fix for unsat retardation
@@ -2400,6 +2421,15 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 
         END IF
 
+!       ! reflection algorithm
+       IF( p(n,3) > 4.3 ) THEN
+        p(n,3) =4.3 - ( p(n, 3) - 4.3)
+       ENDIF 
+!       IF( p(n,1) < 14 ) THEN
+!        p(n,1) =14.0 + 14.0 - p(n, 1) 
+!       ENDIF 
+       
+      
 ! Now we add decay/ingrowth
 !
 
@@ -2549,10 +2579,34 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
         END IF
         
         
-      END DO  !  DO WHILE (done == 0)
+        END DO  ! correpsonding to tnext part loop? DO WHILE (done== 0)
       
 151 CONTINUE
-      
+
+!       IF( p(n, 1) .GE. 15.0 .AND. origloc( 1 ) < 15.0 ) THEN
+!         mp = mp + 1
+!         p(mp, 1 ) = origloc(1) 
+!         p(mp, 2 ) = origloc(2) 
+!         p(mp, 3 ) = origloc(3) 
+!         p(mp,4) = p(n,4) 
+!         p(mp,5) = DBLE(np)
+!         p(mp,7) = p(n,7) 
+!	ip(mp,1) = ip(n,1)
+!	ip(mp,2) = ip(n,2)
+!	ip(mp,3) = ip(n,3)
+!	ip(mp,4) = ip(n,4)
+!	ip(mp,5) = ip(n,5)
+!	ip(mp,6) = ip(n,6)
+!	ip(mp,7) = ip(n,7)
+!	ip(mp,8) = ip(n,8)
+!	ip(mp,9) = ip(n,9)
+!	ip(mp,10) = ip(n,10)
+!       ENDIF
+!
+!       IF( p(n, 1) .LT. 15.0 .AND. origloc( 1 ) >= 15.0 ) THEN
+!               p( n, 1 ) = origloc( 1 )
+!       ENDIF
+
 !
 ! now we contribute to the concentration at the reporting time
 !
@@ -2660,6 +2714,80 @@ END DO ! the big particle loop:  DO  n = 1, np
     szz = 0.0D0
     rzz = 0.0D0
 
+!
+! now do the chemical reactions
+!
+  CALL countParticles( p,ip, np, xtent, ytent, ztent, n_constituents, delv, &
+       tnext )
+
+  CALL ConcToMgperLiter( c, xtent, ytent, ztent, n_constituents )
+
+  CALL    checkConc( p, cellv, c, porosity, sat, xtent, ytent, ztent,      &
+                                                            n_constituents )  
+
+  CALL maxMassAllCellSpec( p, np, ip )
+
+ CALL addRemoveParticles( p, ip, ipwell, irp, iprp, lastprint, &
+                                    np, npmax, delv,  n_constituents, &
+                                xtent, ytent, ztent, c, ( tnext - t_prev ), &
+                           porosity, sat )
+!  np = mp
+  CALL updateConc( c, p, ip, np, delc, domax, sat, porosity, Rtard, tnext )
+
+!
+! now write out concentration at given time
+!
+    IF (concprint == 1) THEN
+      WRITE (dotit,199) it
+      199 FORMAT('.',i5.5)
+      DO i = 1, n_constituents
+      confile1 = trim(confile(i)) // dotit
+      filename= trim(confile(i))//dotit//confile2
+      
+      CALL cbin_write(c(i,:,:,:),filename,xtent, ytent,ztent,delv(1),delv(2),delv(3))
+if (part_conc_write==1) then
+!	  write out each particle in each conc cell
+!
+!
+ filename = trim(confile(i)) // dotit //'.txt'
+open (1919,file=trim(filename))
+DO  k=1,ztent
+  DO  j=1,ytent
+    DO  ii=1,xtent
+      IF (c(1,ii,j,k) > 0.d0) THEN
+	  write(1919,*) '+++++++++++++++++++'
+	  write(1919,*) ii,j,k
+	  write(1919,*) C(1,ii,j,k)
+		do n = 1, np
+		ploc(1) = IDINT(p(n,1)/delv(1)) + 1
+		ploc(2) = IDINT(p(n,2)/delv(2)) + 1
+		ploc(3) = IDINT(p(n,3)/delv(3)) + 1
+		if((ploc(1) == ii).and.(ploc(2)==j).and.(ploc(3)==k)) then
+		write(1919,*) ii,j,k
+		write(1919,*) n,p(n,7)
+		write(1919,*) p(n,4),porosity(i,j,k)
+		write(1919,*) p(n,1),p(n,2),p(n,3)
+		write(1919,*)
+		end if
+		end do
+      END IF
+    END DO
+  END DO
+END DO
+close(1919)
+end if ! part_conc_write
+!
+!
+!
+      END DO
+        else if (concprint == 2 ) THEN
+              WRITE (dotit,199) it
+
+  !CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),it,n_constituents,vtk_file)
+  CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,npars%backgroundConc,vtk_file)
+      
+    END IF   !print concentration
+    
     npact =0
     bdyx1 = 2.*delv(1)
     bdyx2 = DBLE(domax(1)-1)*delv(1)
@@ -2802,80 +2930,12 @@ END DO ! the big particle loop:  DO  n = 1, np
     WRITE(666,*) 'Current number of particles: ', np
     flush(666)
 
-  CALL countParticles( p,ip, np, xtent, ytent, ztent, n_constituents, delv, &
-       tnext )
-
-  CALL ConcToMgperLiter( c, xtent, ytent, ztent, n_constituents )
-
-  CALL    checkConc( p, cellv, c, porosity, sat, xtent, ytent, ztent,      &
-                                                            n_constituents )  
-
-  CALL maxMassAllCellSpec( p, np, ip )
-
-  CALL addRemoveParticles( p, ip, ipwell, irp, iprp, lastprint, &
-                                    np, npmax, delv,  n_constituents, &
-                                xtent, ytent, ztent, c, ( tnext - t_prev ), &
-                            porosity, sat )
-!
 ! now write out concentration at given time
 !
-    
-    
-    IF (concprint == 1) THEN
-      WRITE (dotit,199) it
-      199 FORMAT('.',i5.5)
-      DO i = 1, n_constituents
-      confile1 = trim(confile(i)) // dotit
-      filename= trim(confile(i))//dotit//confile2
-      
-      CALL cbin_write(c(i,:,:,:),filename,xtent, ytent,ztent,delv(1),delv(2),delv(3))
-if (part_conc_write==1) then
-!	  write out each particle in each conc cell
-!
-!
- filename = trim(confile(i)) // dotit //'.txt'
-open (1919,file=trim(filename))
-DO  k=1,ztent
-  DO  j=1,ytent
-    DO  ii=1,xtent
-      IF (c(1,ii,j,k) > 0.d0) THEN
-	  write(1919,*) '+++++++++++++++++++'
-	  write(1919,*) ii,j,k
-	  write(1919,*) C(1,ii,j,k)
-		do n = 1, np
-		ploc(1) = IDINT(p(n,1)/delv(1)) + 1
-		ploc(2) = IDINT(p(n,2)/delv(2)) + 1
-		ploc(3) = IDINT(p(n,3)/delv(3)) + 1
-		if((ploc(1) == ii).and.(ploc(2)==j).and.(ploc(3)==k)) then
-		write(1919,*) ii,j,k
-		write(1919,*) n,p(n,7)
-		write(1919,*) p(n,4),porosity(i,j,k)
-		write(1919,*) p(n,1),p(n,2),p(n,3)
-		write(1919,*)
-		end if
-		end do
-      END IF
-    END DO
   END DO
-END DO
-close(1919)
-end if ! part_conc_write
-!
-!
-!
-      END DO
-        else if (concprint == 2 ) THEN
-              WRITE (dotit,199) it
-
-!  CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),it,n_constituents,vtk_file)
-  CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,npars%backgroundConc,vtk_file)
-      
-    END IF   !print concentration
-
-
-  END DO !  DO  it = 1, nt
 
 CALL deallocateParticles_Memory( xtent, ytent, ztent, n_constituents )
+
 
 !
 ! write out all constituent masses over time
@@ -2995,9 +3055,9 @@ DO k = 1,  nz
   DO j = 1, ny
     DO i = 1, nx
       READ(16)  x(1,i,j,k),x(2,i,j,k),x(3,i,j,k)
-      x(1,i,j,k) =  x(1,i,j,k)*86400.d0
-      x(2,i,j,k) =  x(2,i,j,k)*86400.d0
-      x(3,i,j,k) =  x(3,i,j,k)*86400.d0
+!      x(1,i,j,k) =  x(1,i,j,k)*86400.d0
+!      x(2,i,j,k) =  x(2,i,j,k)*86400.d0
+!      x(3,i,j,k) =  x(3,i,j,k)*86400.d0
 !	  x(1,i,j,k) =  x(1,i,j,k)/997.d0
 !      x(2,i,j,k) =  x(2,i,j,k)/997.d0
 !      x(3,i,j,k) =  x(3,i,j,k)/997.d0
@@ -3009,12 +3069,43 @@ END DO !k
 RETURN
 END SUBROUTINE compact_vread
 
+! Moved to Particles.f90
+! 
+!FUNCTION ran1(idum)
+!INTEGER*4 idum,IA,IM,IQ,IR,NTAB,NDIV
+!REAL*8 ran1,AM,EPS,RNMX
+!PARAMETER (IA=16807,IM=2147483647,AM=1./IM,IQ=127773,IR=2836,  &
+!   NTAB=32,NDIV=1+(IM-1)/NTAB,EPS=1.2e-7,RNMX=1.-EPS)
+!      INTEGER j,k,iv(NTAB),iy
+!      SAVE iv,iy
+!      DATA iv /NTAB*0/, iy /0/
+!      if (idum.le.0.or.iy.eq.0) then
+!        idum=max(-idum,1)
+!        do 11 j=NTAB+8,1,-1
+!          k=idum/IQ
+!          idum=IA*(idum-k*IQ)-IR*k
+!          if (idum.lt.0) idum=idum+IM
+!          if (j.le.NTAB) iv(j)=idum
+!11      continue
+!        iy=iv(1)
+!      endif
+!      k=idum/IQ
+!      idum=IA*(idum-k*IQ)-IR*k
+!      if (idum.lt.0) idum=idum+IM
+!
+!      j=1+iy/NDIV
+!      iy=iv(j)
+!      iv(j)=idum
+!      ran1=min(AM*iy,RNMX)
+!      return
+!      END
+
 !
 !-----------------------------------------------------------------------
 !     function to generate pseudo random numbers, uniform (0,1)
 !-----------------------------------------------------------------------
 !
-  function rand2(iuu)
+      function rand2(iuu)
 !
 	real*8 rand2,rssq,randt
 	integer m,l,iuu

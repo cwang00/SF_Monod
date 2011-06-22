@@ -2392,7 +2392,9 @@ end if
         
        CALL addGasDiffusion( n, ip, tloc, porosity, sat, moldiff, mldif  )
 
-        IF (((al > 0.0D0).OR.(at > 0.0D0).OR.(moldiff > 0.0D0)).AND.(iP(n,4) == 0)) THEN
+!        IF (((al > 0.0D0).OR.(at > 0.0D0).OR.(moldiff > 0.0D0)).AND.(iP(n,4) == 0) ) THEN
+        !disable dispersion at the source cell
+        IF (((al > 0.0D0).OR.(at > 0.0D0).OR.(moldiff > 0.0D0)).AND.(iP(n,4) == 0) .AND. ( p(n, 1) > 15.0 )) THEN
 ! Okay, now we add RW component and correction factor to our current
 !  position
 !
@@ -2422,12 +2424,12 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
         END IF
 
 !       ! reflection algorithm
-       IF( p(n,3) > 4.3 ) THEN
-        p(n,3) =4.3 - ( p(n, 3) - 4.3)
-       ENDIF 
-!       IF( p(n,1) < 14 ) THEN
-!        p(n,1) =14.0 + 14.0 - p(n, 1) 
+!       IF( p(n,3) > 4.3 ) THEN
+!        p(n,3) =4.3 - ( p(n, 3) - 4.3)
 !       ENDIF 
+       IF( p(n,1) < 14 ) THEN
+        p(n,1) =14.0 + 14.0 - p(n, 1) 
+       ENDIF 
        
       
 ! Now we add decay/ingrowth
@@ -2602,7 +2604,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 !	ip(mp,9) = ip(n,9)
 !	ip(mp,10) = ip(n,10)
 !       ENDIF
-!
+
 !       IF( p(n, 1) .LT. 15.0 .AND. origloc( 1 ) >= 15.0 ) THEN
 !               p( n, 1 ) = origloc( 1 )
 !       ENDIF
@@ -2717,22 +2719,22 @@ END DO ! the big particle loop:  DO  n = 1, np
 !
 ! now do the chemical reactions
 !
-  CALL countParticles( p,ip, np, xtent, ytent, ztent, n_constituents, delv, &
-       tnext )
+!  CALL countParticles( p,ip, np, xtent, ytent, ztent, n_constituents, delv, &
+!       tnext )
 
   CALL ConcToMgperLiter( c, xtent, ytent, ztent, n_constituents )
 
-  CALL    checkConc( p, cellv, c, porosity, sat, xtent, ytent, ztent,      &
-                                                            n_constituents )  
+!  CALL    checkConc( p, cellv, c, porosity, sat, xtent, ytent, ztent,      &
+!                                                            n_constituents )  
 
-  CALL maxMassAllCellSpec( p, np, ip )
+!  CALL maxMassAllCellSpec( p, np, ip )
 
- CALL addRemoveParticles( p, ip, ipwell, irp, iprp, lastprint, &
-                                    np, npmax, delv,  n_constituents, &
-                                xtent, ytent, ztent, c, ( tnext - t_prev ), &
-                           porosity, sat )
+! CALL addRemoveParticles( p, ip, ipwell, irp, iprp, lastprint, &
+!                                    np, npmax, delv,  n_constituents, &
+!                                xtent, ytent, ztent, c, ( tnext - t_prev ), &
+!                           porosity, sat )
 !  np = mp
-  CALL updateConc( c, p, ip, np, delc, domax, sat, porosity, Rtard, tnext )
+!  CALL updateConc( c, p, ip, np, delc, domax, sat, porosity, Rtard, tnext )
 
 !
 ! now write out concentration at given time

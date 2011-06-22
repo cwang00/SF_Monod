@@ -604,8 +604,8 @@ DO   kk = 1, nw
 END DO
 
 
-!CALL ReadVGTransPars( ninputfile, xtent, ytent, ztent )
-CALL ReadNTransPars( ninputfile, xtent, ytent, ztent )
+CALL ReadVGTransPars( ninputfile, xtent, ytent, ztent )
+!CALL ReadNTransPars( ninputfile, xtent, ytent, ztent )
 
 
 vmult = 1.0D0

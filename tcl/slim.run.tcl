@@ -27,7 +27,7 @@ if {$saturated == "yes"} {
 
 if {$v_type == "vbin"} {
 puts $fileId "1							! reading V's from vbin type file"
-puts $fileId "\"$vel_file\"					! Vbin File Name"
+puts $fileId "\"$vel_file\"					! Vbin File Name" 
 if {$saturated != "yes"} {
   if { $saturated == "const" } {
      puts $fileId "$vga				                 ! VG alpha" 
@@ -45,6 +45,7 @@ if {$saturated != "yes"} {
  }
  puts $fileId "$phi									! phi value \[-\]"
 }
+
 
 if {$v_type == "calc"} {
 puts $fileId "2							! calcing V's internally, steady state"
@@ -120,7 +121,8 @@ puts $fileId "$num_constituents 				! number of constituents"
 for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
 puts $fileId "$half_life($jj)				        ! radioactive half life,  \[d\]" 
 }
-for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
+#for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
+for {set jj 1} {$jj <= 1} {incr jj 1} {
 puts $nfileId "$jj   $constituent_names($jj)				        ! number to  constituent names,  \[d\]" 
 }
 puts $fileId "$alpha_l						! longitudinal disersivity, alpha_l, \[m\]"
@@ -290,44 +292,8 @@ puts $fileId " "
 puts $fileId " "
 puts $fileId " "
 
-puts $nfileId "$biomass1_concentration_mg_l ! biomass1 concentration mg/l of porous media"
-puts $nfileId "$biomass2_concentration_mg_l ! biomass2 concentration mg/l of porous media"
-puts $nfileId "$Y1_M_biomass_M_substrate !microbial yield coefficient for biomass 1 (M biomass/ M substrate)"
-puts $nfileId "$Y2_M_biomass_M_substrate !microbial yield coefficient for biomass 2 (M biomass/ M substrate)"
-puts $nfileId "$Kb1_mg_l !emperical biomass 1 inhibition constant (M biomass/L^3 porous medium) mg/l"
-puts $nfileId "$Kb2_mg_l !emperical biomass 2 inhibition constant (M biomass/L^3 porous medium) mg/l"
-puts $nfileId "$K_CH2O_mg_l !CH2O half-saturation constant (M species/L^3 water) mg/l"
-puts $nfileId "$K_O2_mg_l !O2 half-saturation constant (M species/L^3 water) mg/l"
-puts $nfileId "$K_NH4_mg_l !NH4 half-saturation constant (M species/L^3 water) mg/l"
-puts $nfileId "$K_NO3_mg_l !NO3 half-saturation constant (M species/L^3 water) mg/l"
-puts $nfileId "$K_O2I_mg_l !O2 inhibition coefficient(M species/L^3 water) mg/l"
-puts $nfileId "$Kd_CH2O_cm3_g !CH2O distribution coefficient cm^3/g"
-puts $nfileId "$Kd_NH4_cm3_g !NH4 distribution coefficient cm^3/g"
-puts $nfileId "$k1d_1_day ! specific biomass decay or maintenance constant (1/T) 1/day for biomass 1"
-puts $nfileId "$k2d_1_day ! specific biomass decay or maintenance constant (1/T) 1/day for biomass 2"
-puts $nfileId "$H_O2 !O2 Henry's constant"
-puts $nfileId "$H_N2 !N2 Henry's constant"
-puts $nfileId "$H_CO2 !CO2 Henry's constant"
-puts $nfileId "$Dg1_m2_day !substrate free air diffusion coefficient m^2/day"
-puts $nfileId "$Dg2_m2_day !Electron acceptor free air diffusion coefficient m^2/day"
-puts $nfileId "$k_max_ox_1_day ! organic carbon oxidation maximum primary substrate utilization rate 1/day"
-puts $nfileId "$k_max_denit_1_day ! denitrification maximum primary substrate utilization rate 1/day"
-puts $nfileId "$k_max_nit_1_day ! nitrification maximum primary substrate utilization rate 1/day"
-puts $nfileId "$k_f_co2_1_day ! CO2 forward rate 1/day" 
-puts $nfileId "$k_b_co2_1_mday ! CO2 backward rate 1/(M*day)"
-puts $nfileId "$k_f_H_1_mday ! CO2+H=HCO3 forward rate 1/(M*day)"
-puts $nfileId "$k_b_H_1_day ! CO2+H=HCO3 backward rate 1/day"
-puts $nfileId "$k_f_HCO3_1_day ! CO3 +H2O = HCO3 +H forward rate 1/day"
-puts $nfileId "$k_b_HCO3_1_mday ! CO3 +H2O = HCO3 +H backward rate 1/(M*day)"
-puts $nfileId "$k_f_H20_1_day ! H2O=H+OH forward rate 1/day"
-puts $nfileId "$k_b_H2O_1_mday ! H2O=H+OH backward rate 1/(M*day)"
-puts $nfileId "$k_f_1_cm_day !CaCO3(s) + H = HCO3+Ca forward rate mol/(cm^2*day)"
-puts $nfileId "$k_b_1_cm_mday !CaCO3(s) + H = HCO3+Ca forward rate"
-puts $nfileId "$k_f_2_cm_day !CaCO3(s) + H2O + CO2(aq) = 2HCO3 + Ca forward rate mol(cm^2*day)"
-puts $nfileId "$k_b_2_cm_m2day !CaCO3(s) + H2O + CO2(aq) = 2HCO3 + Ca backward rate mol(cm^2*day)"
-puts $nfileId "$k_f_3_mol_cm2day !CaCO3(s) = CO3 + Ca forward rate mol(cm^2*day)"
-puts $nfileId "$k_b_3_cm_mday !CaCO3(s) = CO3 + Ca backward rate mol(cm^2*day)"
-puts $nfileId "$Acc_1_cm ! reactive mineral surface area per unit vol. of porous media estimated  1/cm"
+puts $nfileId "$firstorderdecay_1_day ! first-order decay"
+puts $nfileId "$zeroorderdecay_1_day ! zero-order decay"
 
 for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
 puts $nfileId "$slim_background_conc($jj)            ! background conc"

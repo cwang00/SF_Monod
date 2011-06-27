@@ -762,7 +762,7 @@ MODULE Particles
 !         ENDIF  
 !      END DO
 
-      DO i = 1, VGTotalNumberOfSpecies
+      DO i = 1, TotalNumberOfSpecies
         IF ( number_of_parts(i, x, y, z ) > 0 ) THEN
            found = .TRUE.
            timeCellAllSpec = pp( part_numbers(i, x, y, z)%arr(1), 7 )

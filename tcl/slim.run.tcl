@@ -220,6 +220,8 @@ for {set ii 1} {$ii <= $number_wells} {incr ii 1} {
 puts $fileId "$well_x_location($ii) , $well_y_location($ii) , $well_screen_top($ii) , $well_screen_bottom($ii) , $well_pumping_rate($ii) "
 }
 
+puts $fileId "$modelname                           !select which reaction model"
+
 for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
 puts $fileId "\"$plane_out_file($jj)\""
 }
@@ -273,8 +275,26 @@ puts $fileId "4							! Mulitple Indicator; reading in file-Type IC"
 puts $fileId "\"$slim_ic_ind_file($jj)\""
 }
 
+if {$slim_initial_condition_type($jj) == "ind_mult_background"} {
+puts $fileId "5							! Mulitple Indicator; reading in second-Type IC, use background conc to initialize"
+puts $fileId "\"$slim_ic_ind_file($jj)\""
+puts $fileId "\"$slim_ic_ind_file_bg($jj)\""
+puts $fileId "$slim_ic_ind_cat($jj)						! indicator cat"
+puts $fileId "$slim_Initial_Concentration($jj)			! Co \[mass/vol**3\]"
+puts $fileId "$slim_number_particles($jj)				! num particles total "
+}
+
 if {$slim_initial_condition_type($jj) == "none"} {
 puts $fileId "0							! No IC"
+}
+
+if {$slim_initial_condition_type($jj) == "conc_at_bnd"} {
+puts $fileId "6							! given conc at boundary reading in file-Type IC"
+puts $fileId "\"$slim_ic_ind_file($jj)\""
+puts $fileId "\"$slim_ic_ind_file_bg($jj)\""
+puts $fileId "$slim_ic_ind_cat($jj)"
+puts $fileId "$slim_Initial_Concentration($jj)			! Co \[mass/vol**3\]"
+puts $fileId "$slim_number_particles($jj)				! num particles total "
 }
 }
 
@@ -286,17 +306,122 @@ puts $fileId "$min_conc						! min conc"
 if {$temp_averaging == "yes"} {puts $fileId "1							! Temporal Averaging"
 } else { puts $fileId "0							! Not temporally avging for concentration" }
 puts $fileId "$vel_nskip						! number of timesteps to skip"
+puts $fileId "$Xup_Ref                               ! X upper reflection?"
+puts $fileId "$bnd_Xup                               !X boundary location"
+puts $fileId "$Xdown_Ref                               ! X down reflection?"
+puts $fileId "$bnd_Xdown                               !X boundary location"
+puts $fileId "$Yup_Ref                               ! Y upper reflection?"
+puts $fileId "$bnd_Yup                               !Y boundary location"
+puts $fileId "$Ydown_Ref                               ! Y down reflection?"
+puts $fileId "$bnd_Ydown                               !Y boundary location"
+puts $fileId "$Zup_Ref                               ! Z upper reflection?"
+puts $fileId "$bnd_Zup                               !Z boundary location"
+puts $fileId "$Zdown_Ref                               ! Z donw reflection?"
+puts $fileId "$bnd_Zdown                               !Z boundary location"
 puts $fileId " "
 puts $fileId " "
 
 puts $fileId " "
 puts $fileId " "
+
+if {$modelname == "MacQ1990"} {
+  puts $nfileId "$kmax      ! maximum rate of substrate utilization"
+  puts $nfileId "$Ks        ! substrate half-saturation constant"
+  puts $nfileId "$Ka        ! electron acceptor half-saturation constant"
+  puts $nfileId "$Rs        ! substrate retardation"
+  puts $nfileId "$Rm        ! electron acceptor retardation"
+  puts $nfileId "$Y         ! biomass yield coefficient"
+  puts $nfileId "$r         ! Utilizaton ratio, X"
+  puts $nfileId "$decay     ! biomass decay coefficient"
+  for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
+   puts $nfileId "$slim_background_conc($jj)            ! background conc"
+  }
+} elseif { $modelname == "MacQ1990unsat" } {
+  puts $nfileId "$kmax      ! maximum rate of substrate utilization"
+  puts $nfileId "$Ks        ! substrate half-saturation constant"
+  puts $nfileId "$Ka        ! electron acceptor half-saturation constant"
+  puts $nfileId "$Rs        ! substrate retardation"
+  puts $nfileId "$Rm        ! electron acceptor retardation"
+  puts $nfileId "$Y         ! biomass yield coefficient"
+  puts $nfileId "$r1         ! Utilizaton ratio, X"
+  puts $nfileId "$r2         ! Utilizaton ratio, X"
+  puts $nfileId "$decay     ! biomass decay coefficient"
+  puts $nfileId "$Kb        ! biomass inhibition coefficient"
+  puts $nfileId "$SH        ! substrate Henry's constant"
+  puts $nfileId "$EH        ! electron acceptor Henry's constant"
+  puts $nfileId "$SD0        ! substract free air diffusion coefficient"
+  puts $nfileId "$ED0        ! electorn acceptor free air diffusion coefficient"
+  for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
+   puts $nfileId "$slim_background_conc($jj)            ! background conc"
+  }
+} elseif { $modelname == "MacQ"} {
+puts $nfileId "$biomass1_concentration_mg_l ! biomass1 concentration mg/l of porous media"
+puts $nfileId "$biomass2_concentration_mg_l ! biomass2 concentration mg/l of porous media"
+puts $nfileId "$Y1_M_biomass_M_substrate !microbial yield coefficient for biomass 1 (M biomass/ M substrate)"
+puts $nfileId "$Y2_M_biomass_M_substrate !microbial yield coefficient for biomass 2 (M biomass/ M substrate)"
+puts $nfileId "$Kb1_mg_l !emperical biomass 1 inhibition constant (M biomass/L^3 porous medium) mg/l"
+puts $nfileId "$Kb2_mg_l !emperical biomass 2 inhibition constant (M biomass/L^3 porous medium) mg/l"
+puts $nfileId "$K_CH2O_mg_l !CH2O half-saturation constant (M species/L^3 water) mg/l"
+puts $nfileId "$K_O2_mg_l !O2 half-saturation constant (M species/L^3 water) mg/l"
+puts $nfileId "$K_NH4_mg_l !NH4 half-saturation constant (M species/L^3 water) mg/l"
+puts $nfileId "$K_NO3_mg_l !NO3 half-saturation constant (M species/L^3 water) mg/l"
+puts $nfileId "$K_O2I_mg_l !O2 inhibition coefficient(M species/L^3 water) mg/l"
+puts $nfileId "$Kd_CH2O_cm3_g !CH2O distribution coefficient cm^3/g"
+puts $nfileId "$Kd_NH4_cm3_g !NH4 distribution coefficient cm^3/g"
+puts $nfileId "$k1d_1_day ! specific biomass decay or maintenance constant (1/T) 1/day for biomass 1"
+puts $nfileId "$k2d_1_day ! specific biomass decay or maintenance constant (1/T) 1/day for biomass 2"
+puts $nfileId "$H_O2 !O2 Henry's constant"
+puts $nfileId "$H_N2 !N2 Henry's constant"
+puts $nfileId "$H_CO2 !CO2 Henry's constant"
+puts $nfileId "$Dg1_m2_day !substrate free air diffusion coefficient m^2/day"
+puts $nfileId "$Dg2_m2_day !Electron acceptor free air diffusion coefficient m^2/day"
+puts $nfileId "$k_max_ox_1_day ! organic carbon oxidation maximum primary substrate utilization rate 1/day"
+puts $nfileId "$k_max_denit_1_day ! denitrification maximum primary substrate utilization rate 1/day"
+puts $nfileId "$k_max_nit_1_day ! nitrification maximum primary substrate utilization rate 1/day"
+puts $nfileId "$k_f_co2_1_day ! CO2 forward rate 1/day" 
+puts $nfileId "$k_b_co2_1_mday ! CO2 backward rate 1/(M*day)"
+puts $nfileId "$k_f_H_1_mday ! CO2+H=HCO3 forward rate 1/(M*day)"
+puts $nfileId "$k_b_H_1_day ! CO2+H=HCO3 backward rate 1/day"
+puts $nfileId "$k_f_HCO3_1_day ! CO3 +H2O = HCO3 +H forward rate 1/day"
+puts $nfileId "$k_b_HCO3_1_mday ! CO3 +H2O = HCO3 +H backward rate 1/(M*day)"
+puts $nfileId "$k_f_H20_1_day ! H2O=H+OH forward rate 1/day"
+puts $nfileId "$k_b_H2O_1_mday ! H2O=H+OH backward rate 1/(M*day)"
+puts $nfileId "$k_f_1_cm_day !CaCO3(s) + H = HCO3+Ca forward rate mol/(cm^2*day)"
+puts $nfileId "$k_b_1_cm_mday !CaCO3(s) + H = HCO3+Ca forward rate"
+puts $nfileId "$k_f_2_cm_day !CaCO3(s) + H2O + CO2(aq) = 2HCO3 + Ca forward rate mol(cm^2*day)"
+puts $nfileId "$k_b_2_cm_m2day !CaCO3(s) + H2O + CO2(aq) = 2HCO3 + Ca backward rate mol(cm^2*day)"
+puts $nfileId "$k_f_3_mol_cm2day !CaCO3(s) = CO3 + Ca forward rate mol(cm^2*day)"
+puts $nfileId "$k_b_3_cm_mday !CaCO3(s) = CO3 + Ca backward rate mol(cm^2*day)"
+puts $nfileId "$Acc_1_cm ! reactive mineral surface area per unit vol. of porous media estimated  1/cm"
+puts $nfileId "$soil_bulk_den_g_cm3 ! soil bulk density cm^3/g"
+
+for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
+puts $nfileId "$slim_background_conc($jj)            ! background conc"
+}
+} elseif {$modelname == "VG"} {
 
 puts $nfileId "$firstorderdecay_1_day ! first-order decay"
 puts $nfileId "$zeroorderdecay_1_day ! zero-order decay"
 
 for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
 puts $nfileId "$slim_background_conc($jj)            ! background conc"
+}
+} elseif {$modelname == "Chen1992"} {
+ puts $nfileId "$kmax_tol ! maximum rate of substrate utilization"
+ puts $nfileId "$kmax_ben ! maximum rate of substrate utilization"
+ puts $nfileId   "$Ktol   ! toluene half-saturation constant"
+ puts $nfileId    "$Kben   ! benzene half-saturation constant"
+ puts $nfileId    "$Kdo   ! electron acceptor half-saturation constant"
+ puts $nfileId    "$Rtol   ! substrate retardation"
+ puts $nfileId    "$Rben   ! substrate retardation"
+ puts $nfileId    "$Rm   ! electron acceptor retardation"
+ puts $nfileId    "$Y    ! biomass yield coefficient"
+ puts $nfileId    "$r_tol_do    ! Utilizaton ratio, X" 
+ puts $nfileId    "$r_ben_do    ! Utilizaton ratio, X"
+ puts $nfileId    "$decay ! biomass decay coefficient"
+ for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
+ puts $nfileId "$slim_background_conc($jj)            ! background conc"
+ }
 }
 close $fileId
 close $nfileId

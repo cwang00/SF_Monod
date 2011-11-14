@@ -99,6 +99,7 @@ CHARACTER (LEN=100) ::  runname, slimfile, logfile,      &
 	headfile, phifile,head_list_file, time_file,   &
     vgafile, vgnfile, sresfile, vtk_file
 
+CHARACTER (LEN=20) :: modelname
 
 CHARACTER(LEN=100),allocatable :: wellbtcfile(:)
 CHARACTER(LEN=20),allocatable :: concfile(:)
@@ -604,8 +605,22 @@ DO   kk = 1, nw
 END DO
 
 
-!CALL ReadVGTransPars( ninputfile, xtent, ytent, ztent )
-CALL ReadNTransPars( ninputfile, xtent, ytent, ztent )
+READ(99,*) modelname
+
+IF ( modelname == 'Chen1992' ) THEN
+   CALL ReadChen1992TransPars( ninputfile, xtent, ytent, ztent )
+ELSE IF( modelname == 'MacQ1990' ) THEN
+   CALL ReadMacQ1990TransPars( ninputfile, xtent, ytent, ztent )
+ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+   CALL ReadMacQ1990unsatTransPars( ninputfile, xtent, ytent, ztent )
+ELSE IF( modelname == 'MacQ' ) THEN
+   CALL ReadNTransPars( ninputfile, xtent, ytent, ztent )
+ELSE IF( modelname == 'VG' ) THEN
+   CALL ReadVGTransPars( ninputfile, xtent, ytent, ztent )
+ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+ENDIF
 
 
 vmult = 1.0D0
@@ -634,7 +649,7 @@ CALL slimfast(xtent,ytent,ztent,delv,al,at,                            &
     partfile,nw,wells,welltnext,moldiff,welltnumb, r,phi,n_constituents, &
 	half_life,k_att,k_det,iv_type,press, headfile,head_list_file, time_file, &
 	 kxfile,kyfile,kzfile,vgafile,vgnfile,sresfile,npmax, give_up, epsi,vmult, &
-     vtk_file,saturated, vga_const, vgn_const, sres_sat_const)
+     vtk_file,saturated, vga_const, vgn_const, sres_sat_const, modelname)
 	
 
 print*, 'finished'

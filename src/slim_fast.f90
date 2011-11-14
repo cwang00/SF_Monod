@@ -11,7 +11,7 @@ SUBROUTINE slimfast(xtent,ytent,ztent,delv,al,at, &
     partfile,nw,well,welltnext,moldiff,welltnumb, rtard,porosity,n_constituents, &
  half_life,k_att,k_det,iv_type, press,headfile,head_list_file,time_file, kxfile,kyfile,  &
  kzfile,vgafile,vgnfile,sresfile,npmax,give_up,epsi,vmult,vtk_file, saturated, &
- vga_const, vgn_const, sres_sat_const)
+ vga_const, vgn_const, sres_sat_const, modelname)
 ! Slim-Fast Main Routine
 ! written by Reed M. Maxwell
 ! rmaxwell@mines.edu
@@ -123,7 +123,7 @@ REAL*8                   :: delv(3)
 INTEGER*4                :: n_constituents
 REAL*8                   :: al
 REAL*8                   :: at
-INTEGER*4                :: concprint
+INTEGER*4                :: concprint, velprint
 INTEGER*4                :: wellprint
 INTEGER*4                :: momprint
 !CHARACTER (LEN=20)       :: confile(n_constituents)
@@ -176,18 +176,18 @@ REAL*8  time,  delc(5),vp(5), cellv, tloop,lamda,Prob,Zhl, &
     rxx, ryy, sxx, sxy, syy, vxz, dtw,vpw,wellq,  &
     nstepav,  dtr,  bdyx1, bdyx2, bdyy1, bdyy2, &
     bdyz1, bdyz2, npact, xlic,xuic,ylic,yuic,zlic,zuic, &
-    wellx,welly,wellzt,wellzb, ic_mass(100,20),ic_time(100), &
+    wellx,welly,wellzt,wellzb,  &
      rzz, szz, dxx, dxy, dxz,xplaneloc(10), &
     dyz, dzz, dzx, dzy, vxx, vzz, vyy, vyz, cz, dz,vxy, &
     dyx, dyy, dlimit, ddx, ddy, ddz, timenext, &
     decayic, dectimic, dicnstep, rand, dt_lamda, &
-     grad_phi_x, grad_phi_y, grad_phi_z,ic_time_begin(100),ic_time_end(100), &
+     grad_phi_x, grad_phi_y, grad_phi_z, &
      t_att, t_prev, p_av1, p_av2,t_big_step, pulse_vol, rw_flux(2),mass_rec(50),rstar
 
 INTEGER*4   ici(10), nplane,  wellnpart, po(4,4),planeloc, &
     ll, done, iwjb, ijunk, iwjt,movedir,welloc(20,10),iplane, &
-    iwflag, tempavg, n_ic_cats,ic_part_dens(20), icnpart, &
-    ic_cats(20),ts1, iii, jjj, npcurrent,partsplit, ts, planedir(10), &
+    iwflag(13), tempavg, n_ic_cats(13),ic_part_dens(13,20), icnpart, &
+    ic_cats(13, 20),ts1, iii, jjj, npcurrent,partsplit, ts, planedir(10), &
  idecsteps, ii, jj, kk, ind_ic_catagory, icat, jcat, kcat, ic_cat_count, &
    kic, n_ic_timesteps, loop2, iic, cell_sink,boundary_cond(3,2),well_r(2,10000,3), &
         rw_ind(2), n_rw_ind(2), n_rw,imax
@@ -198,9 +198,10 @@ REAL*8  tad(6), move,extemp,tdd(8),f(5),fbl(5), rand2,pdist,minpdist
 REAL*4,allocatable::c(:,:,:,:)
 REAL*4 cps, cmin
 
-REAL*8,allocatable::v(:,:,:,:),mass(:,:), P(:,:),sat(:,:,:),scxyz(:,:),lastprint(:,:)
+REAL*8,allocatable::v(:,:,:,:),mass(:,:), P(:,:),sat(:,:,:),scxyz(:,:),lastprint(:,:), ic_mass_or_conc(:, :, :), ic_time_begin(:,:), ic_time_end(:,:)
 REAL*8,allocatable::hkx(:,:,:), hky(:,:,:),hkz(:,:,:),vga(:,:,:),vgn(:,:,:),sres(:,:,:)
-INTEGER*4,allocatable::ic_cat_num(:,:,:),iP(:,:),irP(:),iprP(:,:)
+INTEGER*4,allocatable::ic_cat_num(:,:,:,:),iP(:,:),irP(:),iprP(:,:), &
+                       ic_cat_num_bg(:, :, :, :)
 
 INTEGER*4 l,i,j,k,n,ploc(4),np,domax(4),numax,loc3p,it, &
     passes, locstuck(5),  itemp, wc,av(5), &
@@ -219,8 +220,12 @@ CHARACTER (LEN=40) :: filename, format_desc
 CHARACTER (LEN=40),allocatable ::planefile(:)
 CHARACTER (LEN=100) :: ind_ic_file
 
-REAL*8 :: vga_const, vgn_const, sres_sat_const
+REAL*8 :: vga_const, vgn_const, sres_sat_const, bnd_Xup, bnd_Xdown,    &
+                                                bnd_Yup, bnd_Ydown,    &
+                                                bnd_Zup, bnd_Zdown
 REAL*8 :: oldloc(3), origloc(3)
+INTEGER*4 :: Xup_Ref, Xdown_Ref, Yup_Ref, Ydown_Ref, Zup_Ref, Zdown_Ref
+CHARACTER (LEN=20) :: modelname
 interface
 
 subroutine v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,phi,delv,nx,ny,nz,press,sat)
@@ -257,6 +262,17 @@ REAL*8                 :: dx
 REAL*8                 :: dy
 REAL*8                 :: dz
 end subroutine cbin_write
+
+SUBROUTINE cbin_write_real8(x,filename,ixlim,iylim,izlim,dx,dy,dz)
+REAL*8    :: x(:,:,:)
+CHARACTER (LEN=40)     :: filename
+INTEGER*4 :: ixlim
+INTEGER*4 :: iylim
+INTEGER*4 :: izlim
+REAL*8                 :: dx
+REAL*8                 :: dy
+REAL*8                 :: dz
+end subroutine cbin_write_real8
 
 SUBROUTINE vtk_write(time,x,conc_header,ixlim,iylim,izlim,dx,dy,dz,icycle,n_constituents,vtk_file)
 real*8                 :: time
@@ -296,6 +312,31 @@ end subroutine gnuplot_write
     real*8  :: dz2
     END SUBROUTINE pf_read
  
+subroutine gen_part( icat, jcat, kcat, ic_cat_num, n_ic_cats, ic_cats,      &
+                     ic_conc, ic_part_dens, particle, ip,                   &
+                     delv, vel, num_of_parts,                             &
+                     timestep_num, constitute_num, npmax, current_conc,     &
+                     time_begin, time_end, porosity, sat ) 
+    INTEGER*4 :: icat, jcat, kcat, n_ic_cats,       &
+                 num_of_parts, timestep_num,              &
+                 constitute_num, npmax
+    INTEGER*4, DIMENSION(:,:,:) :: ic_cat_num
+    INTEGER*4, DIMENSION(:,:) :: ip
+    INTEGER*4, DIMENSION(:) :: ic_cats, ic_part_dens
+
+    real*8  :: time_begin, time_end, cellv
+    REAL*8, DIMENSION(:,:) :: particle, ic_conc
+    REAL*8, DIMENSION(:,:,:) :: sat, porosity
+    REAL*8, DIMENSION(:, :,:,:) :: vel
+    REAL*4, DIMENSION(:,:,:,:) ::  current_conc
+    REAL*8, DIMENSION(:) :: delv
+
+END SUBROUTINE gen_part
+
+REAL*8  FUNCTION ran1(idum)
+INTEGER*4 :: idum
+END FUNCTION ran1
+
 end interface
 
 
@@ -308,11 +349,17 @@ ir = 21
 imax = max(xtent,ytent,ztent)
 
 allocate(v(3,xtent,ytent,ztent), c(n_constituents,xtent,ytent,ztent), &
-       ic_cat_num(xtent,ytent,ztent),planefile(n_constituents),mass(n_constituents+1,nt+10),  &
+       ic_cat_num(13,xtent,ytent,ztent),                              &
+       ic_cat_num_bg(13,xtent,ytent,ztent),                           &
+       planefile(n_constituents),    &
+       mass(n_constituents+1,nt+10),  &
        P(npmax,10),iP(npmax,10),ipwell(npmax,20),sat(xtent,ytent,ztent),irP(npmax)  , &
                 scxyz(3,imax),hkx(xtent,ytent,ztent),hky(xtent,ytent,ztent), &
                  hkz(xtent,ytent,ztent),vga(xtent,ytent,ztent),vgn(xtent,ytent,ztent),  &
                  sres(xtent,ytent,ztent), iprP(npmax,2), lastprint(npmax,3)) 
+
+ allocate( ic_time_begin(13, 1000  ), ic_time_end( 13, 1000 ), &
+            ic_mass_or_conc( 13, 1000, 20 ) )
 
 c = 0.d0
 mass = 0.d0
@@ -664,8 +711,8 @@ n = 1
 np = 0
 
 DO iic = 1, n_constituents
- READ(99,*) iwflag
- IF (iwflag == 1) THEN
+ READ(99,*) iwflag(iic)
+ IF (iwflag(iic) == 1) THEN
   READ(99,*) wellx
   WRITE(666,*) wellx
   READ(99,*) welly
@@ -704,7 +751,7 @@ DO iic = 1, n_constituents
 
 ! pulse-type IC
 
- IF (iwflag == 2) THEN
+ IF (iwflag(iic) == 2) THEN
   write(666,*)
   write(666,*) 'Pulse-type IC (type 2) for Constituent ',iic,trim(confile(iic))
   C(iiC,:,:,:) = 0.d0
@@ -798,7 +845,8 @@ kk = 1
 !        print*, ploc(l),l,n
 ! change of ploc, test
 !		ploc(l) = INT((p(n,l)+del2v(l))/delv(l))
-        IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
+!        IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
+        IF((ploc(l) <= 0).OR.(ploc(l) > domax(l) )) THEN
           inbounds = 0
         END IF
       END DO  
@@ -826,7 +874,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 
 ! first Indicator IC
 
- IF (iwflag == 3) THEN
+ IF (iwflag(iic) == 3) THEN
   
   READ(99,*) ind_ic_file
   OPEN(123,FILE=trim(ind_ic_file),STATUS='old')
@@ -836,8 +884,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
   DO kk = 1, kcat
     DO jj = 1, jcat
       DO ii = 1, icat
-        READ(123,*) ic_cat_num(ii,jj,kk)
-        IF (ic_cat_num(ii,jj,kk) == ind_ic_catagory)  &
+        READ(123,*) ic_cat_num(iic, ii,jj,kk)
+        IF (ic_cat_num(iic, ii,jj,kk) == ind_ic_catagory)  &
 			 ic_cat_count = ic_cat_count + 1
       END DO
     END DO
@@ -857,7 +905,202 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
   DO kk = 1, kcat
     DO jj = 1, jcat
       DO ii = 1, icat
-        IF (ic_cat_num(ii,jj,kk) == ind_ic_catagory) THEN
+        IF (ic_cat_num(iic, ii,jj,kk) == ind_ic_catagory) THEN
+! assign particles to active locations
+          DO  kic = 1, (icnpart/ic_cat_count)
+            p(n,1) = delv(1)*(ran1(ir)) + DBLE(ii-1)*delv(1) 
+            p(n,2) = delv(2)*(ran1(ir)) + DBLE(jj-1)*delv(2) 
+            p(n,3) = delv(3)*(ran1(ir)) + DBLE(kk-1)*delv(3) 
+            p(n,4) =  coic*(sat(ii,jj,kk)*porosity(ii,jj,kk)*   &
+				cellv*DBLE(ic_cat_count))/DBLE(icnpart)
+            p(n,5) =  n
+            p(n,7) = 0.0D0
+            iP(n,1) = iiC
+            iP(n,2) = 1
+            IF (concprint >= 1) THEN
+              inbounds = 1
+              DO  l = 1, numax
+                ploc(l) = IDINT(p(n,l)/delc(l)) + 1
+! change in ploc test
+!				ploc(l) = INT((p(n,l)+del2v(l))/delv(l))
+                
+!                IF((ploc(l) <= 2).OR.(ploc(l) >= domax(l))) THEN
+                IF((ploc(l) <= 0).OR.(ploc(l) > domax(l))) THEN
+                  inbounds = 0
+                END IF
+              END DO
+              
+              IF (inbounds == 1) THEN
+! we are adding a fix for unsat retardation
+rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2),ploc(3))
+                c(ip(n,1),ploc(1),ploc(2),ploc(3)) = c(ip(n,1),ploc(1),ploc(2),ploc(3)) +  &
+                    SNGL( dble(iP(n,2))*(p(n,4))/(cellv*sat(ploc(1),ploc(2),ploc(3))*porosity(ploc(1),ploc(2),ploc(3))*Rstar) )
+
+              END IF
+            END IF  ! printing concentrations
+            n = n +1
+          END DO
+        END IF
+      END DO  !ii
+    END DO  !jj
+  END DO  !kk
+  
+ END IF
+
+! second Indicator IC
+
+ IF (iwflag(iic) == 4 .OR. iwflag(iic) == 5 ) THEN
+  PRINT*, ' ind mult'
+  WRITE(666,*) ' Mulitple Indicator IC'
+  WRITE(666,*)
+  
+  READ(99,*) ind_ic_file
+  WRITE(666,*) ' reading from file:',trim(ind_ic_file)
+  OPEN (124,FILE=trim(ind_ic_file),STATUS='old')
+
+! skip comment file
+
+
+  READ(124,*)
+  READ(124,*)
+  READ(124,*)
+  READ(124,*)
+  
+  READ (124,*) ind_ic_file
+  READ (124,*) n_ic_cats(iic)
+  READ (124,*) ic_cats(iic, 1:n_ic_cats(iic))
+  READ (124,*) ic_part_dens(iic, 1:n_ic_cats(iic))
+  READ (124,*) n_ic_timesteps
+  
+  WRITE(666,*) ' Ind file:',trim(ind_ic_file)
+  WRITE(666,*) ' Num Indicators:',n_ic_cats(iic)
+  WRITE(666,*) ' Indicators:',ic_cats(iic, 1:n_ic_cats(iic))
+  WRITE(666,*) ' Particle Density:',ic_part_dens(iic, 1:n_ic_cats(iic))
+  WRITE(666,*) ' Num Timesteps:',n_ic_timesteps
+  
+  READ (124,*)
+  DO ii = 1, n_ic_timesteps
+    READ (124,*) ts1, ic_time_begin(iic,ii),ic_time_end(iic,ii),   &
+                 ic_mass_or_conc(iic, ii,1:n_ic_cats(iic))
+    WRITE(666,*) 'timestep:',ii
+    WRITE(666,*)  'time begin, end:',ic_time_begin(iic, ii),ic_time_end(iic, ii)
+    WRITE(666,*) ic_mass_or_conc(iic, ii,1:n_ic_cats(iic))
+  END DO
+  CLOSE (124)
+  PRINT*,' read ind file'
+  !OPEN(123,FILE=trim(ind_ic_file),STATUS='old',readonly)
+  OPEN(123,FILE=trim(ind_ic_file),form='unformatted', access='stream',STATUS='old')
+
+! read(99,*) ind_ic_catagory
+
+  !READ(123,*) icat, jcat, kcat
+  READ(123) icat, jcat, kcat
+  ic_cat_count = 0
+  DO kk = 1, kcat
+    DO jj = 1, jcat
+      DO ii = 1, icat
+        READ(123) ic_cat_num(iic, ii,jj,kk)
+      END DO
+    END DO
+  END DO
+  CLOSE (123)
+ 
+  PRINT*,' loop thru ic'
+  DO kk = 1, kcat
+    DO jj = 1, jcat
+      DO ii = 1, icat
+        DO jjj = 1, n_ic_timesteps
+          DO iii = 1, n_ic_cats(iic)
+            IF (ic_cat_num(iic, ii,jj,kk) == ic_cats(iic,iii)) THEN
+
+! assign particles to active locations
+! check to see if mass of ic > 0
+             IF (ic_mass_or_conc(iic,jjj,iii) > 0.D0) THEN
+              DO  kic = 1, ic_part_dens(iic,iii)
+	            p(n,1) = delv(1)*(ran1(ir)) + DBLE(ii-1)*delv(1)
+                p(n,2) = delv(2)*(ran1(ir)) + DBLE(jj-1)*delv(2)
+                p(n,3) = delv(3)*(ran1(ir)) + DBLE(kk-1)*delv(3)
+! hardwire particles to sit one cell below trench indicator for trench infil test
+                !p(n,3) = delv(3)*(ran1(ir)) + DBLE(kk-2)*delv(3)
+! hardwire particles to sit at BOTTOM of cell- only valid for trench/playa runs
+                !p(n,3) =  DBLE(kk-1)*delv(3)
+                p(n,4) =  ic_mass_or_conc(iic,jjj,iii)/ic_part_dens(iic,iii)
+                p(n,5) =  n
+                p(n,7) = ic_time_begin(iic,jjj) + ran1(ir)*(ic_time_end(iic,jjj)-ic_time_begin(iic,jjj))
+                ip(n,1) = iiC
+                ip(n,2) = 1
+                IF (concprint >= 1) THEN
+                  inbounds = 1
+                  DO  l = 1, numax
+                    ploc(l) = IDINT(p(n,l)/delc(l)) + 1
+! change in ploc test
+!					ploc(l) = INT((p(n,l)+del2v(l))/delv(l))
+!                    IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) ) ) THEN
+                    IF((ploc(l) <= 0).OR.(ploc(l) > domax(l) ) ) THEN
+                      inbounds = 0
+                    END IF
+                  END DO !l
+				  IF (P(n,7) > 0.) inbounds = 0
+
+                  IF (inbounds == 1) THEN
+! we are adding a fix for unsat retardation
+rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2),ploc(3))
+                    c(ip(n,1),ploc(1),ploc(2),ploc(3)) = c(ip(n,1),ploc(1),ploc(2),ploc(3)) +  &
+                       SNGL( dble(iP(n,2))*(p(n,4))/(cellv*sat(ploc(1),ploc(2),ploc(3))*porosity(ploc(1),ploc(2),ploc(3))*Rstar) )
+                  END IF   ! inbounds?
+                END IF  ! printing concentrations?
+                
+                n = n +1
+                IF (n > npmax) THEN
+                  PRINT*, 'max num particles exceeded.  increase npmax parameter ',npmax
+                  WRITE(666,*) 'Max Particles Exceeded!  Increase NPMAX:',npmax
+                  STOP
+                END IF ! max parts ?
+               
+              END DO  ! kic
+             END IF  ! mass >0 ? 
+            END IF  ! at a ic node
+            
+          END DO !iii
+        END DO !jjj
+      END DO  !ii
+    END DO  !jj
+  END DO  !kk
+  
+ END IF ! ic = 4 .or. ic =5
+
+ IF ( iwflag(iic) == 5 ) THEN
+  READ(99,*) ind_ic_file
+  OPEN(123,FILE=trim(ind_ic_file),form='unformatted', access='stream',STATUS='old')
+  READ(99,*) ind_ic_catagory
+  READ(123) icat, jcat, kcat
+  ic_cat_count = 0
+  DO kk = 1, kcat
+    DO jj = 1, jcat
+      DO ii = 1, icat
+        READ(123) ic_cat_num_bg(iic,ii,jj,kk)
+        IF (ic_cat_num_bg(iic,ii,jj,kk) == ind_ic_catagory)  &
+			 ic_cat_count = ic_cat_count + 1
+      END DO
+    END DO
+  END DO
+  CLOSE (123)
+  PRINT*, 'number ic cells:',ic_cat_count
+  
+  READ(99,*) coic
+  READ(99,*) icnpart
+  WRITE(666,*) icnpart
+  
+  WRITE(666,'(" C0 for Ind File Input [ppm]: ",f15.9)')  coic
+! write(666,'(" Initial mass of each particle [g]: ",f7.3)')
+! 1 coic*(porosity(ploc(1),ploc(2),ploc(3))*
+!    2 cellv*dble(ic_cat_count))/dble(icnpart)
+  
+ IF( icnpart .GT. 0 .AND. coic .GT. 0.0 ) THEN
+  DO kk = 1, kcat
+    DO jj = 1, jcat
+      DO ii = 1, icat
+        IF (ic_cat_num_bg(iic,ii,jj,kk) == ind_ic_catagory) THEN
 ! assign particles to active locations
           DO  kic = 1, (icnpart/ic_cat_count)
             p(n,1) = delv(1)*(ran1(ir)) + DBLE(ii-1)*delv(1) 
@@ -895,14 +1138,14 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
       END DO  !ii
     END DO  !jj
   END DO  !kk
-  
  END IF
+ END IF ! ic =5
 
-! second Indicator IC
+! third Indicator IC, given concentratio at the boundary
 
- IF (iwflag == 4) THEN
-  PRINT*, ' ind mult'
-  WRITE(666,*) ' Mulitple Indicator IC'
+ IF (iwflag(iic) == 6) THEN
+  PRINT*, ' third ind mult - boundary conc.'
+  WRITE(666,*) ' 3rd Mulitple Indicator IC - boundary conc'
   WRITE(666,*)
   
   READ(99,*) ind_ic_file
@@ -917,107 +1160,115 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
   READ(124,*)
   
   READ (124,*) ind_ic_file
-  READ (124,*) n_ic_cats
-  READ (124,*) ic_cats(1:n_ic_cats)
-  READ (124,*) ic_part_dens(1:n_ic_cats)
+  READ (124,*) n_ic_cats(iic)
+  READ (124,*) ic_cats(iic, 1:n_ic_cats(iic))
+  READ (124,*) ic_part_dens(iic, 1:n_ic_cats(iic))
   READ (124,*) n_ic_timesteps
   
   WRITE(666,*) ' Ind file:',trim(ind_ic_file)
-  WRITE(666,*) ' Num Indicators:',n_ic_cats
-  WRITE(666,*) ' Indicators:',ic_cats(1:n_ic_cats)
-  WRITE(666,*) ' Particle Density:',ic_part_dens(1:n_ic_cats)
+  WRITE(666,*) ' Num Indicators:',n_ic_cats(iic)
+  WRITE(666,*) ' Indicators:',ic_cats(iic, 1:n_ic_cats(iic))
+  WRITE(666,*) ' Particle Density:',ic_part_dens(iic, 1:n_ic_cats(iic))
   WRITE(666,*) ' Num Timesteps:',n_ic_timesteps
   
   READ (124,*)
   DO ii = 1, n_ic_timesteps
-    READ (124,*) ts1, ic_time_begin(ii),ic_time_end(ii),ic_mass(ii,1:n_ic_cats)
+    READ (124,*) ts1, ic_time_begin(iic, ii),ic_time_end(iic, ii),ic_mass_or_conc(iic, ii,1:n_ic_cats(iic))
     WRITE(666,*) 'timestep:',ii
-    WRITE(666,*)  'time begin, end:',ic_time_begin(ii),ic_time_end(ii)
-    WRITE(666,*) ic_mass(ii,1:n_ic_cats)
+    WRITE(666,*)  'time begin, end:',ic_time_begin(iic, ii),ic_time_end(iic, ii)
+    WRITE(666,*) ic_mass_or_conc(iic, ii,1:n_ic_cats(iic))
   END DO
   CLOSE (124)
   PRINT*,' read ind file'
   !OPEN(123,FILE=trim(ind_ic_file),STATUS='old',readonly)
   OPEN(123,FILE=trim(ind_ic_file),form='unformatted', access='stream',STATUS='old')
 
-! read(99,*) ind_ic_catagory
-
-  !READ(123,*) icat, jcat, kcat
   READ(123) icat, jcat, kcat
   ic_cat_count = 0
   DO kk = 1, kcat
     DO jj = 1, jcat
       DO ii = 1, icat
-        !READ(123,*) ic_cat_num(ii,jj,kk)
-        READ(123) ic_cat_num(ii,jj,kk)
+        READ(123) ic_cat_num(iic, ii,jj,kk)
       END DO
     END DO
   END DO
   CLOSE (123)
- 
-  PRINT*,' loop thru ic'
+
+  READ(99,*) ind_ic_file
+  OPEN(123,FILE=trim(ind_ic_file),form='unformatted', access='stream',STATUS='old')
+  READ(99,*) ind_ic_catagory
+  READ(123) icat, jcat, kcat
+  ic_cat_count = 0
   DO kk = 1, kcat
     DO jj = 1, jcat
       DO ii = 1, icat
-        DO jjj = 1, n_ic_timesteps
-          DO iii = 1, n_ic_cats
-            IF (ic_cat_num(ii,jj,kk) == ic_cats(iii)) THEN
-
+        READ(123) ic_cat_num_bg(iic,ii,jj,kk)
+        IF (ic_cat_num_bg(iic,ii,jj,kk) == ind_ic_catagory)  &
+			 ic_cat_count = ic_cat_count + 1
+      END DO
+    END DO
+  END DO
+  CLOSE (123)
+  PRINT*, 'number ic cells:',ic_cat_count
+  
+  READ(99,*) coic
+  READ(99,*) icnpart
+  WRITE(666,*) icnpart
+  
+  WRITE(666,'(" C0 for Ind File Input [ppm]: ",f15.9)')  coic
+! write(666,'(" Initial mass of each particle [g]: ",f7.3)')
+! 1 coic*(porosity(ploc(1),ploc(2),ploc(3))*
+!    2 cellv*dble(ic_cat_count))/dble(icnpart)
+  
+ IF( icnpart .GT. 0 .AND. coic .GT. 0.0 ) THEN
+  DO kk = 1, kcat
+    DO jj = 1, jcat
+      DO ii = 1, icat
+        IF (ic_cat_num_bg(iic,ii,jj,kk) == ind_ic_catagory) THEN
 ! assign particles to active locations
-! check to see if mass of ic > 0
-             IF (ic_mass(jjj,iii) > 0.D0) THEN
-              DO  kic = 1, ic_part_dens(iii)
-	            p(n,1) = delv(1)*(ran1(ir)) + DBLE(ii-1)*delv(1)
-                p(n,2) = delv(2)*(ran1(ir)) + DBLE(jj-1)*delv(2)
-                p(n,3) = delv(3)*(ran1(ir)) + DBLE(kk-1)*delv(3)
-! hardwire particles to sit one cell below trench indicator for trench infil test
-                !p(n,3) = delv(3)*(ran1(ir)) + DBLE(kk-2)*delv(3)
-! hardwire particles to sit at BOTTOM of cell- only valid for trench/playa runs
-                !p(n,3) =  DBLE(kk-1)*delv(3)
-                p(n,4) =  ic_mass(jjj,iii)/ic_part_dens(iii)
-                p(n,5) =  n
-                p(n,7) = ic_time_begin(jjj) + ran1(ir)*(ic_time_end(jjj)-ic_time_begin(jjj))
-                ip(n,1) = iiC
-                ip(n,2) = 1
-                IF (concprint >= 1) THEN
-                  inbounds = 1
-                  DO  l = 1, numax
-                    ploc(l) = IDINT(p(n,l)/delc(l)) + 1
+          DO  kic = 1, (icnpart/ic_cat_count)
+            p(n,1) = delv(1)*(ran1(ir)) + DBLE(ii-1)*delv(1) 
+            p(n,2) = delv(2)*(ran1(ir)) + DBLE(jj-1)*delv(2) 
+            p(n,3) = delv(3)*(ran1(ir)) + DBLE(kk-1)*delv(3) 
+            p(n,4) =  coic*(sat(ii,jj,kk)*porosity(ii,jj,kk)*   &
+				cellv*DBLE(ic_cat_count))/DBLE(icnpart)
+            p(n,5) =  n
+            p(n,7) = 0.0D0
+            iP(n,1) = iiC
+            iP(n,2) = 1
+            IF (concprint >= 1) THEN
+              inbounds = 1
+              DO  l = 1, numax
+                ploc(l) = IDINT(p(n,l)/delc(l)) + 1
 ! change in ploc test
-!					ploc(l) = INT((p(n,l)+del2v(l))/delv(l))
-                    IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) ) ) THEN
-                      inbounds = 0
-                    END IF
-                  END DO !l
-				  IF (P(n,7) > 0.) inbounds = 0
-
-                  IF (inbounds == 1) THEN
+!				ploc(l) = INT((p(n,l)+del2v(l))/delv(l))
+                
+                IF((ploc(l) <= 2).OR.(ploc(l) >= domax(l))) THEN
+                  inbounds = 0
+                END IF
+              END DO
+              
+              IF (inbounds == 1) THEN
 ! we are adding a fix for unsat retardation
 rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2),ploc(3))
-                    c(ip(n,1),ploc(1),ploc(2),ploc(3)) = c(ip(n,1),ploc(1),ploc(2),ploc(3)) +  &
-                       SNGL( dble(iP(n,2))*(p(n,4))/(cellv*sat(ploc(1),ploc(2),ploc(3))*porosity(ploc(1),ploc(2),ploc(3))*Rstar) )
-                  END IF   ! inbounds?
-                END IF  ! printing concentrations?
-                
-                n = n +1
-                IF (n > npmax) THEN
-                  PRINT*, 'max num particles exceeded.  increase npmax parameter ',npmax
-                  WRITE(666,*) 'Max Particles Exceeded!  Increase NPMAX:',npmax
-                  STOP
-                END IF ! max parts ?
-               
-              END DO  ! kic
-             END IF  ! mass >0 ? 
-            END IF  ! at a ic node
-            
-          END DO !iii
-        END DO !jjj
+                c(ip(n,1),ploc(1),ploc(2),ploc(3)) = c(ip(n,1),ploc(1),ploc(2),ploc(3)) +  &
+                    SNGL( dble(iP(n,2))*(p(n,4))/(cellv*sat(ploc(1),ploc(2),ploc(3))*porosity(ploc(1),ploc(2),ploc(3))*Rstar) )
+
+              END IF
+            END IF  ! printing concentrations
+            n = n +1
+          END DO
+        END IF
       END DO  !ii
     END DO  !jj
   END DO  !kk
-  
- END IF ! ic = 4
+ END IF
+
+ END IF ! ic = 6
+
  END DO  ! DO iiC = 1, n_constituents
+
+np = n-1
 
 print*, 'de allocating'
 !deallocate(ic_cat_num)
@@ -1040,24 +1291,21 @@ READ(99,*) tempavg
 PRINT*,' tempav',tempavg
 IF(tempavg == 1) WRITE (666,*) ' Temporal Averaging '
 
-IF(partprint == 2) THEN
-  PRINT*,' ic ind file'
-  READ(99,*) ind_ic_file
-  OPEN(123,FILE=trim(ind_ic_file),STATUS='old')
-  READ(123,*) icat, jcat, kcat
-  DO kk = 1, kcat
-    DO jj = 1, jcat
-      DO ii = 1, icat
-        READ(123,*) ic_cat_num(ii,jj,kk)
-      END DO
-    END DO
-  END DO
-  CLOSE (123)
-  
-END IF
 PRINT*,'ts'
 READ(99,*) ts
 
+READ(99,*) Xup_Ref
+READ(99,*) bnd_Xup
+READ(99,*) Xdown_Ref
+READ(99,*) bnd_Xdown
+READ(99,*) Yup_Ref
+READ(99,*) bnd_Yup
+READ(99,*) Ydown_Ref
+READ(99,*) bnd_Ydown
+READ(99,*) Zup_Ref
+READ(99,*) bnd_Zup
+READ(99,*) Zdown_Ref
+READ(99,*) bnd_Zdown
 
 if (iv_type == 1) then
 WRITE(666,*)
@@ -1072,11 +1320,6 @@ do i= 1, ts
 
 end do ! i, timestep skips
 end if ! vtype
-
-np = n-1
-WRITE(666,*)
-WRITE(666,*) ' Number of Particles in Simulation: ',np
-WRITE(666,*)
 
 !
 !    Open concentration file and print concentrations
@@ -1148,7 +1391,7 @@ do i = 1, xtent
  do j = 1, ytent
   do k = 1, ztent
    do ii = 1, n_rw
-   if (ic_cat_num(i,j,k)==rw_ind(ii)) then
+   if (ic_cat_num(1,i,j,k)==rw_ind(ii)) then
     n_rw_ind(ii) = n_rw_ind(ii) + 1
     well_r(ii,n_rw_ind(ii),1) = i
     well_r(ii,n_rw_ind(ii),2) = j
@@ -1174,20 +1417,6 @@ CALL allocateParticles_Memory(xtent, ytent, ztent, n_constituents, npmax)
 PRINT*, 'flag 6'
 DO  it = 1, nt
 
-!
-! Clear out old concentrations
-!
- DO iic = 1, n_constituents
-  DO  k=1, domax(3)
-    DO  j=1, domax(2)
-      DO  i=1, domax(1)
-        c(iic,i,j,k) = 0.0D0
-      END DO
-    END DO
-  END DO
- END DO
-  
- ! print*, C(1,1,1,1)
   PRINT*, 'got to big loop'
 
 !  
@@ -1237,6 +1466,33 @@ end if ! calc'd vel ?
   WRITE(666,'("Time [d]:",e12.4,", [y]:",e12.4)' ) tnext,tnext/365.24
   
   movedir = 99
+
+DO iic = 1, n_constituents
+ IF (iwflag(iic) == 6) THEN
+  !
+  ! generate particles for the 1st time step
+  !
+  np = np + 1
+  CALL gen_part( icat, jcat, kcat, ic_cat_num(iic,:,:,:) , n_ic_cats(iic), &
+            ic_cats(iic,:),  ic_mass_or_conc(iic, :,:), ic_part_dens(iic,:), &
+             p, ip, delv, v, np, it, iic, npmax, C,                        &
+             ic_time_begin( iic, it ), ic_time_end( iic, it ), porosity, sat )
+  np = np - 1
+ END IF ! ic = 6
+
+ END DO  ! DO iiC = 1, n_constituents
+
+WRITE(666,*)
+WRITE(666,*) ' Number of Particles in step: ', it, ' is ', np
+WRITE(666,*)
+
+!
+! Clear out old concentrations
+!
+   c = 0.0D0
+  
+ ! print*, C(1,1,1,1)
+
 !
 !reverse velocities if needed
 ! 
@@ -1351,8 +1607,9 @@ origloc( 3 ) = p(n,3)
 !
 ! reset bddy condition
  iP(n,4) = 0
-        IF (ploc(l) >= (domax(l)-1)) THEN
+!        IF (ploc(l) >= (domax(l)-1)) THEN
 !         IF (ploc(l) >= (domax(l))) THEN
+         IF (ploc(l) > (domax(l))) THEN
 		IF (Boundary_cond(l,2) == 0) THEN
           done = 1
           IF(p(n,l) >= 0.) p(n,l) = -p(n,l)
@@ -1371,7 +1628,8 @@ origloc( 3 ) = p(n,3)
 		  END IF
         END IF
 
-        IF (ploc(l) <= 2) THEN
+!        IF (ploc(l) <= 2) THEN
+        IF (ploc(l) <= 0) THEN
 		 IF (Boundary_cond(l,1) == 0) THEN
           IF(p(n,l) >= 0.) p(n,l) = -p(n,l)
 		  if(massive_debug == 1) then
@@ -1388,6 +1646,12 @@ origloc( 3 ) = p(n,3)
 		  iP(n,4) = l
 		 END IF
 		END IF
+
+       IF ( ploc( l ) >= domax( l ) ) THEN
+         po( l, l ) = 0 
+       ELSE
+         po( l, l ) = 1 
+       ENDIF
 
      END DO
 
@@ -1456,13 +1720,16 @@ origloc( 3 ) = p(n,3)
 			ploc(l) = ploc(l) + 1
          END IF
 		END IF
+        
+                if ( ploc( l ) > domax( l ) ) ploc( l ) = domax( l )
+                if ( ploc( l ) < 1 ) ploc( l ) = 1
       END DO
 
 ! print*,'checking geotype'
 ! print*,ploc(1),ploc(2),ploc(3)
 ! print*,ic_cat_num(ploc(1),ploc(2),ploc(3))
 
-      p(n,9) = ic_cat_num(ploc(1),ploc(2),ploc(3))
+      p(n,9) = ic_cat_num(ip(n, 1), ploc(1),ploc(2),ploc(3))
 
 ! if we are sorbed/stuck jump to calculating prob of unsticking
 if (iP(n,2) == 0) go to 919
@@ -1925,7 +2192,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
         
         !IF (((al > 0).OR.(at > 0)).AND.(iP(n,4) == 0)) THEN
 ! hack to turn of RW if we are close to z=0 bddy
-        IF (((ploc(3)<=2).or.(al > 0).OR.(at > 0)).AND.(iP(n,4) == 0)) THEN
+!        IF (((ploc(3)<=2).or.(al > 0).OR.(at > 0)).AND.(iP(n,4) == 0)) THEN
+                IF ( ( ploc(3) > 2 .and. ploc(3) < domax(3) - 1 ) .and. ((al > 0).OR.(at > 0)).AND.(iP(n,4) == 0)) THEN
  
 !
 ! Okay, time to do random walk dispersion and correction term
@@ -2067,7 +2335,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
           dxz = (alt/(2*delv(1))) *( ((vbl(1,3,2,2)*vbl(3,3,2,2))/vnp1) -	&
            ((vbl(1,1,2,2)*vbl(3,1,2,2))/vnm1))
            CALL addGasDispersionX( n, p, ip, delv, tloc, fbl, porosity, sat, &
-                                   dxx )
+                                   dxx, modelname )
           else
 		  dxx = 0.d0
 		  dxy = 0.d0
@@ -2088,7 +2356,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
            ((vbl(2,2,1,2)*vbl(3,2,1,2))/vnm1))
            
            CALL addGasDispersionY( n, p, ip, delv, tloc, fbl, porosity, sat, &
-                                   dyy )
+                                   dyy, modelname )
 			else
 		  dyy = 0.d0
 		  dyx = 0.d0
@@ -2110,7 +2378,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
           dzy = (alt/(2*delv(3))) *( ((vbl(3,2,2,3)*vbl(2,2,2,3))/vnp1) -	&
            ((vbl(3,2,2,1)*vbl(2,2,2,1))/vnm1))
            CALL addGasDispersionZ( n, p, ip, delv, tloc, fbl, porosity, sat, &
-                                   dzz )
+                                   dzz, modelname )
 			else
 		  dzz = 0.d0
 		  dzx = 0.d0
@@ -2184,7 +2452,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
             tdd(6) = (dlimit*delv(3)/dz)**2
           END IF
 
-        END IF
+        END IF !  IF (((ploc(3)<=2).or.(al > 0).OR.(at > 0)).AND.(iP(n,4) == 0)) THEN
         
         
         
@@ -2239,7 +2507,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),tloc(1),tloc(2),tloc(3))-1.d0)/sat(tloc(1),tloc(2)
 		t_att = 0.01D0/K_att(iP(n,1),ploc(1),ploc(2),ploc(3))
 		END IF
 !        tad(4) = DMIN1(tad(1),tad(2),tad(3),trgp,tdd(1),tdd(2),tdd(3),dt_lamda,10.) 
-        tad(4) = DMIN1(tad(1),tad(2),tad(3),trgp,tdd(1),tdd(2),tdd(3),tdd(4),tdd(5),tdd(6),t_att,dt_lamda) 
+!        tad(4) = DMIN1(tad(1),tad(2),tad(3),trgp,tdd(1),tdd(2),tdd(3),tdd(4),tdd(5),tdd(6),t_att,dt_lamda) 
         ! change @RMM in limit for dt for dispersion
         tad(4) = DMIN1(tad(1),tad(2),tad(3),trgp,t_att,dt_lamda) 
 
@@ -2390,9 +2658,12 @@ end if
         END DO
         9194 CONTINUE
         
-       CALL addGasDiffusion( n, ip, tloc, porosity, sat, moldiff, mldif  )
+       CALL addGasDiffusion( n, ip, tloc, porosity, sat, moldiff, mldif,&
+                  modelname  )
 
-        IF (((al > 0.0D0).OR.(at > 0.0D0).OR.(moldiff > 0.0D0)).AND.(iP(n,4) == 0)) THEN
+        IF (((al > 0.0D0).OR.(at > 0.0D0).OR.(moldiff > 0.0D0)).AND.(iP(n,4) == 0) ) THEN
+        !disable dispersion at the source cell
+!        IF (((al > 0.0D0).OR.(at > 0.0D0).OR.(moldiff > 0.0D0)).AND.(iP(n,4) == 0) .AND. ( p(n, 1) > 15.0 )) THEN
 ! Okay, now we add RW component and correction factor to our current
 !  position
 !
@@ -2422,12 +2693,35 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
         END IF
 
 !       ! reflection algorithm
-       IF( p(n,3) > 4.3 ) THEN
-        p(n,3) =4.3 - ( p(n, 3) - 4.3)
-       ENDIF 
+!       IF( p(n,3) > 4.3 ) THEN
+!        p(n,3) =4.3 - ( p(n, 3) - 4.3)
+!       ENDIF 
 !       IF( p(n,1) < 14 ) THEN
 !        p(n,1) =14.0 + 14.0 - p(n, 1) 
 !       ENDIF 
+       !MacQ1990 
+!       IF( p(n,3) > 0.3 ) THEN
+!        p(n,1) =0.3 - ( p(n, 3) - 0.3 )
+!       ENDIF 
+
+       IF ( Zup_Ref .EQ. 1 ) THEN
+         IF( p(n, 3) >  bnd_Zup ) p(n,3) = bnd_Zup - ( p(n,3) - bnd_Zup ) 
+       ENDIF
+       IF ( Zdown_Ref .EQ. 1 ) THEN
+         IF( p(n, 3) <  bnd_Zdown ) p(n,3) = bnd_Zdown - ( p(n,3) - bnd_Zdown ) 
+       ENDIF
+       IF ( Yup_Ref .EQ. 1 ) THEN
+         IF( p(n, 2) >  bnd_Yup ) p(n,2) = bnd_Yup - ( p(n,2) - bnd_Yup ) 
+       ENDIF
+       IF ( Ydown_Ref .EQ. 1 ) THEN
+         IF( p(n, 2) <  bnd_Ydown ) p(n,2) = bnd_Ydown - ( p(n,2) - bnd_Ydown ) 
+       ENDIF
+       IF ( Xup_Ref .EQ. 1 ) THEN
+         IF( p(n, 1) >  bnd_Xup ) p(n,1) = bnd_Xup - ( p(n,1) - bnd_Xup ) 
+       ENDIF
+       IF ( Xdown_Ref .EQ. 1 ) THEN
+         IF( p(n, 1) <  bnd_Xdown ) p(n,1) = bnd_Xdown - ( p(n,1) - bnd_Xdown ) 
+       ENDIF
        
       
 ! Now we add decay/ingrowth
@@ -2539,7 +2833,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             ploc(l) = IDINT(p(n,l)/delc(l)) + 1
 ! change in ploc test
 !             ploc(l) = INT((p(n,l)+del2v(l))/delv(l))
-            IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
+!            IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
+            IF((ploc(l) <= 0).OR.(ploc(l) > domax(l) )) THEN
               inbounds = 0
             END IF
           END DO
@@ -2619,7 +2914,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             ploc(l) = IDINT(p(n,l)/delc(l))  + 1
 ! ploc test
 !			  ploc(l) = INT((p(n,l)+del2v(l))/delv(l))
-            IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
+!            IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
+            IF((ploc(l) <= 0).OR.(ploc(l) > domax(l) )) THEN
               inbounds = 0
             END IF
           END DO
@@ -2636,7 +2932,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             ploc(l) = IDINT(p(n,l)/delc(l)) + 1
 ! change ploc test
 !			ploc(l) = INT((p(n,l)+del2v(l))/delv(l))
-            IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
+!            IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
+            IF((ploc(l) < 1).OR.(ploc(l) > domax(l) )) THEN
               inbounds = 0
             END IF
           END DO
@@ -2723,17 +3020,18 @@ END DO ! the big particle loop:  DO  n = 1, np
   CALL ConcToMgperLiter( c, xtent, ytent, ztent, n_constituents )
 
   CALL    checkConc( p, cellv, c, porosity, sat, xtent, ytent, ztent,      &
-                                                            n_constituents )  
+                                                  n_constituents, modelname )  
 
   CALL maxMassAllCellSpec( p, np, ip )
 
  CALL addRemoveParticles( p, ip, ipwell, irp, iprp, lastprint, &
                                     np, npmax, delv,  n_constituents, &
                                 xtent, ytent, ztent, c, ( tnext - t_prev ), &
-                           porosity, sat )
+                           porosity, sat, modelname )
 !  np = mp
   CALL updateConc( c, p, ip, np, delc, domax, sat, porosity, Rtard, tnext )
 
+  CALL ConcAddBackground( c, xtent, ytent, ztent, n_constituents, modelname )
 !
 ! now write out concentration at given time
 !
@@ -2787,7 +3085,14 @@ end if ! part_conc_write
   CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,npars%backgroundConc,vtk_file)
       
     END IF   !print concentration
+
+    IF( velprint .EQ. 1) THEN
     
+      filename = 'velocity' // dotit //'.cnb'
+      CALL cbin_write_real8(v(3,:,:,:),filename,xtent, ytent,ztent,delv(1),delv(2),delv(3))
+
+    END IF   !print concentration
+
     npact =0
     bdyx1 = 2.*delv(1)
     bdyx2 = DBLE(domax(1)-1)*delv(1)
@@ -2880,7 +3185,8 @@ end if ! part_conc_write
         inbounds = 1
         DO  l = 1, numax
           ploc(l) = INT(p(n,l)/delc(l)) + 1
-          IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
+!          IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
+          IF((ploc(l) < 1).OR.(ploc(l) > domax(l) )) THEN
             inbounds = 0
           END IF ! in bounds?
         END DO ! in bounds?
@@ -2936,6 +3242,7 @@ end if ! part_conc_write
 
 CALL deallocateParticles_Memory( xtent, ytent, ztent, n_constituents )
 
+ deallocate( ic_time_begin, ic_time_end, ic_mass_or_conc )
 
 !
 ! write out all constituent masses over time

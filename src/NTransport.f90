@@ -58,6 +58,7 @@ MODULE NTransport
      REAL :: K_f_3_mol_cm2day
      REAL :: K_b_3_cm_mday
      REAL :: Acc_1_cm
+     REAL :: Soil_bulk_den_g_cm3
      REAL, DIMENSION(TotalNumberOfSpecies)::backgroundConc
      REAL :: MYNPARS
    END TYPE NTransParameters
@@ -117,6 +118,7 @@ MODULE NTransport
      READ(98,*) npars%K_f_3_mol_cm2day
      READ(98,*) npars%K_b_3_cm_mday
      READ(98,*) npars%Acc_1_cm
+     READ(98,*) npars%Soil_bulk_den_g_cm3
      DO I = 1, TotalNumberOfSpecies
         READ(98,*)  npars%backgroundConc( I )
      END DO
@@ -981,12 +983,12 @@ MODULE NTransport
 !
 !     Covert M to mg/l for some of the species
 !
-      rate( 5 ) = rate( 5 ) * ( CO2MoleculeWeight * 1000.0 ) ! M to mg/l
-      rate( 6 ) = rate( 6 ) * ( HCO3MoleculeWeight * 1000.0 ) ! M to mg/l
-      rate( 7 ) = rate( 7 ) * ( HMoleculeWeight * 1000.0 ) ! M to mg/l
-      rate( 8 ) = rate( 8 ) * ( CO3MoleculeWeight * 1000.0 ) ! M to mg/l
-      rate( 9 ) = rate( 9 ) * ( CaMoleculeWeight * 1000.0 ) ! M to mg/l
-      rate( 11 ) = rate( 11 ) * ( OHMoleculeWeight * 1000.0 ) ! M to mg/l
+!      rate( 5 ) = rate( 5 ) * ( CO2MoleculeWeight * 1000.0 ) ! M to mg/l
+!      rate( 6 ) = rate( 6 ) * ( HCO3MoleculeWeight * 1000.0 ) ! M to mg/l
+!      rate( 7 ) = rate( 7 ) * ( HMoleculeWeight * 1000.0 ) ! M to mg/l
+!      rate( 8 ) = rate( 8 ) * ( CO3MoleculeWeight * 1000.0 ) ! M to mg/l
+!      rate( 9 ) = rate( 9 ) * ( CaMoleculeWeight * 1000.0 ) ! M to mg/l
+!      rate( 11 ) = rate( 11 ) * ( OHMoleculeWeight * 1000.0 ) ! M to mg/l
 
       NitrifierConc( xloc, yloc, zloc ) = Y(12)      ! X1
       DenitrifierConc( xloc, yloc, zloc ) = Y(13)    ! X2

@@ -23,7 +23,7 @@ real*8  :: phi(:,:,:)
 real*8  :: v(:,:,:,:),hkx(:,:,:),hky(:,:,:),hkz(:,:,:),sat(:,:,:),vga(:,:,:),vgn(:,:,:),sres(:,:,:)
 !real*8   v(3,nx,ny,nz)
 character(100) :: headfile
-real*8 x0,y0,z0, kr
+real*8 x0,y0,z0, kr, kr1, theta
 real*8, allocatable :: head(:,:,:),scx(:),scy(:),scz(:)  !,kr(:,:,:)
 
 
@@ -106,19 +106,32 @@ DO k = 1,  nz
 
          if (i > 1)       then
 
+                 IF ( Head( i - 1, j, k ) >= 0.0d0 ) THEN
+                       kr1 = 1.0d0
+                 ELSE
+
+                        m = 1.0d0 - ( 1.0d0 / vgn( i - 1, j, k ) )
+                        heads = dabs(Head(i - 1, j, k))
+                       temp1 = (vga(i - 1,j,k)*heads)**(vgn(i - 1,j,k)-1.0d0)
+                      temp2 = (vga(i - 1,j,k)*heads)**vgn(i - 1,j,k)
+                       temp3 = (1.0d0+temp2)**(m/2.0d0)
+                    kr1 = ( 1.0d0- temp1/(1.0d0+temp2)**m)**2.0d0/temp3 
+                 ENDIF
 ! do upwinding check
-                      udir = -1
-          if (Head(i,j,k) > Head(i-1,j,k) ) udir = 0 
-                   if (Head(i+udir,j,k) >= 0.0d0) then
+!                      udir = -1
+!          if (Head(i,j,k) > Head(i-1,j,k) ) udir = 0 
+                   if (Head(i,j,k) >= 0.0d0) then
                        kr = 1.0d0 
                    else
-                        m = 1.0d0 - (1.0d0/vgn(i+udir,j,k))
-                       heads = dabs(Head(i+udir,j,k))
-                       temp1 = (vga(i+udir,j,k)*heads)**(vgn(i+udir,j,k)-1.0d0)
-                      temp2 = (vga(i+udir,j,k)*heads)**vgn(i+udir,j,k)
+                        m = 1.0d0 - (1.0d0/vgn(i,j,k))
+                       heads = dabs(Head(i,j,k))
+                       temp1 = (vga(i,j,k)*heads)**(vgn(i,j,k)-1.0d0)
+                      temp2 = (vga(i,j,k)*heads)**vgn(i,j,k)
                        temp3 = (1.0d0+temp2)**(m/2.0d0)
-                       kr = ( (1.0d0- (temp1/((1.0d0+temp2)**m))**2.0d0) )/temp3 
+                    kr = ( 1.0d0- temp1/(1.0d0+temp2)**m)**2.0d0/temp3 
                    end if 
+                  theta = 0.5 * ( phi( i - 1, j, k ) * sat( i - 1, j, k ) + &
+                                  phi( i, j, k ) * sat( i, j, k ) )
 ! convert press to head if need be
 Hstaru = Head(i,j,k)
 Hstard = Head(i-1,j,k)
@@ -128,27 +141,40 @@ Hstard = Head(i-1,j,k) + dfloat(k-1)*delv(3) + delv(3)/2.d0 !+z0
 end if
                  ! V(1,i,j,k) = -(Head(i,j,k) - Head(i-1,j,k))*     &
                       V(1,i,j,k) = -(Hstaru - Hstard)*     &
-                (kr/(phi(i,j,k)*sat(i,j,k)*delv(1)*scx(i))) *    & 
+                (DSQRT( kr1 * kr ) /(theta*delv(1)*scx(i))) *    & 
                  (2.0d0/(1.0d0/hKx(i,j,k) + 1.0d0/hKx(i-1,j,k) ))
                          ! (hKx(i+udir,j,k)*kr(i+udir,j,k)) 
                    ! if ((i==10).and.(j==10)) print*, i,j,k,V(1,i,j,k),sat,kr,hkx(i,j+udir,k),head(i,j,k),head(i+1,j,k),udir
             end if
 
          if (j > 1)  then
+                 IF ( Head( i, j - 1, k ) >= 0.0d0 ) THEN
+                       kr1 = 1.0d0
+                 ELSE
+
+                        m = 1.0d0 - ( 1.0d0 / vgn( i, j - 1, k ) )
+                        heads = dabs(Head(i, j - 1, k))
+                       temp1 = (vga(i,j - 1, k)*heads)**(vgn(i,j - 1, k)-1.0d0)
+                      temp2 = (vga(i,j - 1, k)*heads)**vgn(i,j - 1, k)
+                       temp3 = (1.0d0+temp2)**(m/2.0d0)
+                    kr1 = ( 1.0d0- temp1/(1.0d0+temp2)**m)**2.0d0/temp3 
+                 ENDIF
 ! do upwinding check
-                      udir = -1
-          if (Head(i,j,k) > Head(i,j-1,k) ) udir = 0 
-                   if (Head(i,j+udir,k) >= 0.0d0) then
+!                      udir = -1
+!          if (Head(i,j,k) > Head(i,j-1,k) ) udir = 0 
+                   if (Head(i,j,k) >= 0.0d0) then
                        kr = 1.0d0
                    else
-                        m = 1.0d0 - (1.0d0/vgn(i,j+udir,k))
-                       heads = dabs(Head(i,j+udir,k))
-                       temp1 = (vga(i,j+udir,k)*heads)**(vgn(i,j+udir,k)-1.0d0)
-                       temp2 = (vga(i,j+udir,k)*heads)**vgn(i,j+udir,k)
+                        m = 1.0d0 - (1.0d0/vgn(i,j,k))
+                       heads = dabs(Head(i,j,k))
+                       temp1 = (vga(i,j,k)*heads)**(vgn(i,j,k)-1.0d0)
+                       temp2 = (vga(i,j,k)*heads)**vgn(i,j,k)
                       temp3 = (1.0d0+temp2)**(m/2.0d0)
-                       kr = ((1.0d0-(temp1/((1.0d0+temp2)**m))**2.0d0) )/temp3 
+                    kr = ( 1.0d0- temp1/(1.0d0+temp2)**m)**2.0d0/temp3 
                    end if          
 
+                  theta = 0.5 * ( phi( i, j - 1, k ) * sat( i, j - 1, k ) + &
+                                  phi( i, j, k ) * sat( i, j, k ) )
 ! convert press to head if need be
 Hstaru = Head(i,j,k)
 Hstard = Head(i,j-1,k)
@@ -160,28 +186,41 @@ end if
 
            ! V(2,i,j,k) = -(Head(i,j,k) - Head(i,j-1,k))*        &
                   V(2,i,j,k) = -(Hstaru - Hstard)*        &
-                (kr/(phi(i,j,k)*sat(i,j,k)*delv(2)*scy(j)))*     &
+                (DSQRT( kr1 * kr ) /( theta *delv(2)*scy(j)))*     &
                  (2.0d0/(1.0d0/hKy(i,j,k) + 1.0d0/hKy(i,j-1,k) ))
                    !(hKy(i,j+udir,k)*kr(i,j+udir,k))
                    
                    end if
          if (k > 1)  then
 
+                 IF ( Head( i, j, k - 1 ) >= 0.0d0 ) THEN
+                       kr1 = 1.0d0
+                 ELSE
+
+                        m = 1.0d0 - ( 1.0d0 / vgn( i, j, k - 1 ) )
+                        heads = dabs(Head(i, j, k - 1))
+                       temp1 = (vga(i,j, k - 1)*heads)**(vgn(i,j, k - 1)-1.0d0)
+                      temp2 = (vga(i,j, k - 1)*heads)**vgn(i,j, k - 1)
+                       temp3 = (1.0d0+temp2)**(m/2.0d0)
+                    kr1 = ( 1.0d0- temp1/(1.0d0+temp2)**m)**2.0d0/temp3 
+                 ENDIF
 
 ! do upwinding check
-                      udir = -1
-          if (Head(i,j,k) > Head(i,j,k-1) ) udir = 0 
-                   if (Head(i,j,k+udir) >= 0.0d0) then
+!                      udir = -1
+!          if (Head(i,j,k) > Head(i,j,k-1) ) udir = 0 
+                   if (Head(i,j,k) >= 0.0d0) then
                        kr = 1.0d0
                    else
-                        m = 1.0d0 - (1.0d0/vgn(i,j,k+udir))
-                     heads = dabs(Head(i,j,k+udir))
-                     temp1 = (vga(i,j,k+udir)*heads)**(vgn(i,j,k+udir)-1.0d0)
-                     temp2 = (vga(i,j,k+udir)*heads)**vgn(i,j,k+udir)
+                        m = 1.0d0 - (1.0d0/vgn(i,j,k))
+                     heads = dabs(Head(i,j,k))
+                     temp1 = (vga(i,j,k)*heads)**(vgn(i,j,k)-1.0d0)
+                     temp2 = (vga(i,j,k)*heads)**vgn(i,j,k)
                      temp3 = (1.0d0+temp2)**(m/2.0d0)
-                     kr = ((1.0d0-(temp1/((1.0d0+temp2)**m))**2.0d0) )/temp3 
+                    kr = ( 1.0d0- temp1/(1.0d0+temp2)**m)**2.0d0/temp3 
                    end if           
 
+                  theta = 0.5 * ( phi( i, j, k - 1 ) * sat( i, j, k - 1 ) + &
+                                  phi( i, j, k ) * sat( i, j, k ) )
 ! convert press to head if need be
 Hstaru = Head(i,j,k)
 Hstard = Head(i,j,k-1)
@@ -190,8 +229,8 @@ Hstaru = Head(i,j,k) + dfloat(k-1)*delv(3) + delv(3)/2.d0 !+z0
 Hstard = Head(i,j,k-1) + dfloat(k-2)*delv(3) + delv(3)/2.d0 !+z0
 end if
          
-            V(3,i,j,k) = -(Hstaru - Hstard)*        &
-             (kr/(phi(i,j,k)*sat(i,j,k)*delv(3)*scz(k)))*   &
+            V(3,i,j,k) = -(Hstaru - Hstard )*        &
+             (DSQRT( kr1 * kr ) /(theta * delv(3)* scz(k) ) )*   &
                  (2.0d0/(1.0d0/hKz(i,j,k) + 1.0d0/hKz(i,j,k-1) ))
                    !(hKz(i,j,k+udir)*kr(i,j,k+udir))
                    end if

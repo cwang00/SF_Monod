@@ -4,8 +4,17 @@ MODULE Particles
 
    USE NTransport
    USE VGTransport
+   USE MacQ1990Transport
+   USE MacQ1990unsat
+   USE Chen1992
 
    IMPLICIT NONE
+
+   INTERFACE
+         REAL*8 FUNCTION ran1( idum )
+           INTEGER*4 idum
+         END FUNCTION ran1
+   END INTERFACE
 
    TYPE :: Ptr_to_array
    
@@ -159,30 +168,68 @@ MODULE Particles
 
      SUBROUTINE addRemoveParticles( pp, ip, ipwell, irp, iprp, lastprint, &
                               np, npmax, delv,  ns, nx, ny, nz, conc, dt_day, &
-                              porosity, sat )
+                              porosity, sat, modelname  )
        REAL*8, DIMENSION(:,:) :: pp, lastprint
        REAL*8, DIMENSION(:,:,:) :: porosity, sat
        INTEGER, DIMENSION(:,:) :: ipwell
        INTEGER*4,  DIMENSION(:,:) :: ip, iprp
        INTEGER*4,  DIMENSION(:) ::  irp
        REAL*8, DIMENSION(3) :: delv
-       INTEGER :: ns, nx, ny, nz, i, j, k, l, m, n, idx, p
+       INTEGER :: ns, nx, ny, nz, i, j, k, l, m, n, idx, p, ns_moving
        REAL*4, DIMENSION(:,:,:,:) :: conc
        REAL, DIMENSION(13) :: rates
        REAL*4 :: rate, minmass,maxmass, mass, backgroundmass, particlemass
        REAL*8 :: dt_day
        INTEGER*4 ::  npmax, np
-       CHARACTER*10 substratename
+       CHARACTER*20 substratename, modelname
        LOGICAL :: found, recycle
+       REAL*4 :: bconc
+
+       IF ( modelname == 'Chen1992' ) THEN
+               ns_moving = Chen1992TotalNumberOfSpecies - 2
+       ELSE IF( modelname == 'MacQ1990' ) THEN
+               ns_moving = MacQ1990TotalNumberOfSpecies - 1
+       ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+               ns_moving = MacQ1990unsatTotalNumberOfSpecies - 1
+       ELSE IF( modelname == 'MacQ' ) THEN
+               ns_moving = TotalNumberOfSpecies 
+       ELSE IF( modelname == 'VG' ) THEN
+               ns_moving = VGTotalNumberOfSpecies 
+       ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+       ENDIF
+
 
     DO i = 3, nx - 2
       DO j = 3, ny - 2
         DO k = 3, nz - 2
         
-          IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
-            CALL VODEReactionRatesAtCell( conc, i, j, k, REAL(dt_day), rates )
-!            CALL VGReactRateAtCell( conc, i, j, k, REAL(dt_day), rates )
-            DO l = 1, ns
+          IF ( SUM( number_of_parts(1:ns_moving,i,j,k) ) .GT. 0 ) THEN 
+            IF ( modelname == 'Chen1992' ) THEN
+              CALL Chen1992ReactRateAtCell( conc, i, j, k, REAL(dt_day), rates )
+            ELSE IF( modelname == 'MacQ1990' ) THEN
+              CALL MacQ1990ReactRateAtCell( conc, i, j, k, REAL(dt_day), rates )
+            ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+              CALL MacQ1990unsatReactRateAtCell( conc, i, j, k, REAL(dt_day), rates )
+            ELSE IF( modelname == 'MacQ' ) THEN
+              IF ( number_of_parts( 1, i,j,k ) .GT. 0 .AND.    &
+                   number_of_parts( 2, i,j,k ) .GT. 0 .AND.    &
+                   number_of_parts( 3, i,j,k ) .GT. 0 ) THEN
+                CALL VODEReactionRatesAtCell(                          &
+                      conc, i, j, k, REAL(dt_day), rates )
+              ELSE
+                 rates = 0.0
+              ENDIF
+            ELSE IF( modelname == 'VG' ) THEN
+              CALL VGReactRateAtCell( conc, i, j, k, REAL(dt_day), rates )
+            ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+            ENDIF
+
+!            DO l = 1, ns
+            DO l = 1, ns_moving 
 !              CALL partNumbersAtCellSpec( partNumber,                        &
 !                                         l, i, j, k, pp, ip, np,             &
 !                                         number_of_parts(l,i,j,k), delv )
@@ -193,53 +240,80 @@ MODULE Particles
 !              ENDIF 
 
 !              rate = ReactRateAtCell( conc, i, j, k, npars%SpeciesNames( l ) )
-              IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'NH4' ) THEN
-                 rate = rates( 1 )
-              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'NO3' ) THEN
-                 rate = rates( 2 )
-              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'CH2O' ) THEN
-                 rate = rates( 3 )
-              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'O2' ) THEN
-                 rate = rates( 4 )
-              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'CO2' ) THEN
-                 rate = rates( 5 )
-              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'HCO3' ) THEN
-                 rate = rates( 6 )
-              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'H' ) THEN
-                 rate = rates( 7 )
-              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'CO3' ) THEN
-                 rate = rates( 8 )
-              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'Ca2' ) THEN
-                 rate = rates( 9 )
-              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'N2' ) THEN
-                 rate = rates( 10 )
-              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'OH' ) THEN
-                 rate = rates( 11 )
-              ELSE IF ( TRIM(vgpars%SpeciesNames( l ) ) .eq. 'VG' ) THEN
-                 rate = rates( 1 )
-              ELSE
-
-                 PRINT*, 'Unknow species naem ', npars%SpeciesNames(l)
-
-              ENDIF
+!              IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'NH4' ) THEN
+!                 rate = rates( 1 )
+!              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'NO3' ) THEN
+!                 rate = rates( 2 )
+!              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'CH2O' ) THEN
+!                 rate = rates( 3 )
+!              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'O2' ) THEN
+!                 rate = rates( 4 )
+!              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'CO2' ) THEN
+!                 rate = rates( 5 )
+!              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'HCO3' ) THEN
+!                 rate = rates( 6 )
+!              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'H' ) THEN
+!                 rate = rates( 7 )
+!              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'CO3' ) THEN
+!                 rate = rates( 8 )
+!              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'Ca2' ) THEN
+!                 rate = rates( 9 )
+!              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'N2' ) THEN
+!                 rate = rates( 10 )
+!              ELSE IF( TRIM(npars%SpeciesNames( l )) .eq. 'OH' ) THEN
+!                 rate = rates( 11 )
+!              ELSE IF ( TRIM(vgpars%SpeciesNames( l ) ) .eq. 'VG' ) THEN
+!                 rate = rates( 1 )
+!              ELSE
+!
+!                 PRINT*, 'Unknow species naem ', npars%SpeciesNames(l)
+!
+!              ENDIF
+               rate = rates( l )
               mass = rate * delv(1) * delv(2) * delv(3) * 1000.0           &
                         * sat( i,j , k)  * porosity( i,j,k)
 
               ! 
               !gases in unsaturated soil
               !
+             IF( modelname == 'MacQ' ) THEN
               IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'N2' ) THEN
                 mass = mass * sat(i,j,k) /                                 & 
                 ( npars%N2HenryConst * ( 1 - sat( i,j,k) ) + sat(i,j,k) )
               ELSE IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'CO2' ) THEN
                 mass = mass * sat(i,j,k) /                                 & 
                 ( npars%CO2HenryConst * ( 1 - sat( i,j,k) ) + sat(i,j,k) )
-              ELSE IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'O2' ) THEN
+             ELSE IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'O2' ) THEN
                 mass = mass * sat(i,j,k) /                                 & 
                 ( npars%O2HenryConst * ( 1 - sat( i,j,k) ) + sat(i,j,k) )
               ENDIF
+             ENDIF
 
-              backgroundmass = npars%backgroundConc( l )                    &
+             IF ( modelname =='MacQ1990unsat' ) THEN
+              IF ( l .eq. 1 ) THEN
+                mass = mass * sat(i,j,k) /                                 &
+                ( umpars%SH * ( 1 - sat( i,j,k) ) + sat(i,j,k) )
+              ELSE IF ( l .eq. 2 ) THEN
+                mass = mass * sat(i,j,k) /                                 &
+                ( umpars%EH * ( 1 - sat( i,j,k) ) + sat(i,j,k) )
+              ENDIF
+             ENDIF
+
+              IF ( modelname == 'Chen1992' ) THEN
+               bconc = cpars%backgroundConc(l)
+              ELSE IF( modelname == 'MacQ1990' ) THEN
+               bconc = mpars%backgroundConc(l )
+              ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+               bconc = umpars%backgroundConc(l )
+              ELSE IF( modelname == 'MacQ' ) THEN
+               bconc = npars%backgroundConc(l )
+              ELSE IF( modelname == 'VG' ) THEN
+               bconc = vgpars%backgroundConc(l)
+              ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+              ENDIF
+              backgroundmass = bconc                                        &
                            * delv(1) * delv(2) * delv(3) * 1000.0           &
                         * sat( i,j , k)  * porosity( i,j,k)
 
@@ -276,7 +350,7 @@ MODULE Particles
                     pp(idx,4) = mass + maxmass 
                   ENDIF
                   pp(idx,5) = DBLE(idx)
-                  pp(idx,7) = timeCellAllSpec( i, j, k, pp ) 
+                  pp(idx,7) = timeCellAllSpec( i, j, k, pp, modelname ) 
 !                  pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
                   ip(idx,1) = l
                   ip(idx,2) = 1
@@ -326,7 +400,7 @@ MODULE Particles
                     pp(idx,4) = mass - maxmass
                   ENDIF
                   pp(idx,5) = DBLE(idx)
-                  pp(idx,7) = timeCellAllSpec( i, j, k, pp ) 
+                  pp(idx,7) = timeCellAllSpec( i, j, k, pp, modelname ) 
                   !pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
                   ip(idx,1) = l
                   ip(idx,2) = 1
@@ -503,7 +577,7 @@ MODULE Particles
                     pp(idx,4) = mass - maxmass
                   ENDIF
                   pp(idx,5) = DBLE(idx)
-                  pp(idx,7) = timeCellAllSpec( i, j, k, pp ) 
+                  pp(idx,7) = timeCellAllSpec( i, j, k, pp, modelname ) 
                   !pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
                   ip(idx,1) = l
                   ip(idx,2) = 1
@@ -550,8 +624,10 @@ MODULE Particles
             ENDIF ! IF( number_of_parts( l, i, j, k ) == 0 .AND. mass > 0.0)
            END DO
         ENDIF !IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
-        NitrifierConc( i, j, k ) = NitrifierConc( i, j, k ) + rates( 12 )
-        DenitrifierConc( i, j, k ) = DenitrifierConc( i, j, k ) +  rates( 13 )
+!        IF( modelname == "MacQ" ) THEN
+!         NitrifierConc( i, j, k ) = NitrifierConc( i, j, k ) + rates( 12 )
+!         DenitrifierConc( i, j, k ) = DenitrifierConc( i, j, k ) +  rates( 13 )
+!        ENDIF
 
       END DO
     END DO
@@ -736,16 +812,17 @@ MODULE Particles
        RETURN
      END SUBROUTINE
 
-     REAL*8 FUNCTION timeCellAllSpec( x, y, z, pp )
+     REAL*8 FUNCTION timeCellAllSpec( x, y, z, pp, modelname )
 !     REAL*8 FUNCTION timeCellAllSpec( x, y, z, pp, np, ip, delv )
 
 !       INTEGER ::  x, y, z, i, ix, iy, iz
-       INTEGER ::  x, y, z, i
+       INTEGER ::  x, y, z, i, ns_moving
        REAL*8, DIMENSION(:,:) :: pp
        LOGICAL found
 !       INTEGER*4 ::  np
 !       INTEGER*4,  DIMENSION(:,:) :: ip
 !       REAL*8, DIMENSION(3) :: delv
+       CHARACTER (LEN=20) :: modelname
      
       found = .FALSE. 
       timeCellAllSpec = 0.0
@@ -762,7 +839,21 @@ MODULE Particles
 !         ENDIF  
 !      END DO
 
-      DO i = 1, TotalNumberOfSpecies
+       IF ( modelname == 'Chen1992' ) THEN
+               ns_moving = Chen1992TotalNumberOfSpecies - 2
+       ELSE IF( modelname == 'MacQ1990' ) THEN
+               ns_moving = MacQ1990TotalNumberOfSpecies - 1
+       ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+               ns_moving = MacQ1990unsatTotalNumberOfSpecies - 1
+       ELSE IF( modelname == 'MacQ' ) THEN
+               ns_moving = TotalNumberOfSpecies 
+       ELSE IF( modelname == 'VG' ) THEN
+               ns_moving = VGTotalNumberOfSpecies 
+       ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+       ENDIF
+      DO i = 1, ns_moving
         IF ( number_of_parts(i, x, y, z ) > 0 ) THEN
            found = .TRUE.
            timeCellAllSpec = pp( part_numbers(i, x, y, z)%arr(1), 7 )
@@ -883,7 +974,7 @@ MODULE Particles
      END SUBROUTINE markRemovedParticles
 
      SUBROUTINE  addGasDispersion( n, pp, ip, delv, tloc, fbl, porst, satutn, &
-                                   dxx, dyy, dzz )
+                                   dxx, dyy, dzz, modelname )
       INTEGER*4 :: n, tp1, tp2, tp3
       INTEGER*4 :: i, j, k
       INTEGER*4, DIMENSION(:,:) :: ip
@@ -893,8 +984,10 @@ MODULE Particles
       REAL*8, DIMENSION(:,:,:) :: porst, satutn
       REAL*8 :: dxx, dyy, dzz, D, H
       REAL*8, DIMENSION(4,4,4) :: pbl, sbl
+      CHARACTER (LEN=20) :: modelname
 
-      IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
+      IF ( modelname == 'MacQ' ) THEN
+       IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
 
@@ -979,12 +1072,13 @@ MODULE Particles
                  ( sbl( 2, 2, 3 ) - sbl( 2,2,1) ) / ( 2 * delv( 3 ) ) ) * &
                  H * D
 
+       ENDIF
       ENDIF
 
      END SUBROUTINE addGasDispersion
 
      SUBROUTINE  addGasDispersionX( n, pp, ip, delv, tloc, fbl, porst, satutn, &
-                                   dxx )
+                                   dxx, modelname )
       INTEGER*4 :: n, tp1, tp2, tp3
       INTEGER*4 :: i, j, k
       INTEGER*4, DIMENSION(:,:) :: ip
@@ -995,6 +1089,9 @@ MODULE Particles
       REAL*8 :: dxx, D, H
       REAL*8, DIMENSION(4,4,4) :: pbl, sbl
 
+      CHARACTER (LEN=20) :: modelname
+
+      IF ( modelname == 'MacQ' ) THEN
       IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
@@ -1052,12 +1149,13 @@ MODULE Particles
                   satutn( tloc(1), tloc(2), tloc(3) ) ** 2 )  *         &
                  ( sbl( 3, 2, 2 ) - sbl( 1,2,2) ) / ( 2 * delv( 1 ) ) ) * &
                  H * D
+        ENDIF
       ENDIF
 
      END SUBROUTINE addGasDispersionX
 
      SUBROUTINE  addGasDispersionY( n, pp, ip, delv, tloc, fbl, porst, satutn, &
-                                   dyy )
+                                   dyy, modelname )
       INTEGER*4 :: n, tp1, tp2, tp3
       INTEGER*4 :: i, j, k
       INTEGER*4, DIMENSION(:,:) :: ip
@@ -1067,7 +1165,9 @@ MODULE Particles
       REAL*8, DIMENSION(:,:,:) :: porst, satutn
       REAL*8 :: dyy, D, H
       REAL*8, DIMENSION(4,4,4) :: pbl, sbl
+      CHARACTER (LEN=20) :: modelname
 
+      IF( modelname == 'MacQ' ) THEN
       IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
@@ -1125,12 +1225,12 @@ MODULE Particles
                   satutn( tloc(1), tloc(2), tloc(3) ) ** 2 )  *         &
                  ( sbl( 2, 3, 2 ) - sbl( 2,1,2) ) / ( 2 * delv( 2 ) ) ) * &
                  H * D
+        ENDIF
       ENDIF
-
      END SUBROUTINE addGasDispersionY
 
      SUBROUTINE  addGasDispersionZ( n, pp, ip, delv, tloc, fbl, porst, satutn, &
-                                   dzz )
+                                   dzz, modelname )
       INTEGER*4 :: n, tp1, tp2, tp3
       INTEGER*4 :: i, j, k
       INTEGER*4, DIMENSION(:,:) :: ip
@@ -1140,7 +1240,9 @@ MODULE Particles
       REAL*8, DIMENSION(:,:,:) :: porst, satutn
       REAL*8 :: dzz, D, H
       REAL*8, DIMENSION(4,4,4) :: pbl, sbl
+      CHARACTER (LEN=20) :: modelname
 
+      IF ( modelname == 'MacQ' ) THEN
       IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
@@ -1198,12 +1300,12 @@ MODULE Particles
                   satutn( tloc(1), tloc(2), tloc(3) ) ** 2 )  *         &
                  ( sbl( 2, 2, 3 ) - sbl( 2,2,1) ) / ( 2 * delv( 3 ) ) ) * &
                  H * D
+       ENDIF
       ENDIF
-
      END SUBROUTINE addGasDispersionZ
 
      SUBROUTINE  addGasDispersion2( n, pp, ip, tloc, z, al, at, vn, betad,  &
-                                   porst, satutn, cx, cy, cz  )
+                                   porst, satutn, cx, cy, cz, modelname  )
       INTEGER*4 :: n 
       INTEGER*4, DIMENSION(:) :: tloc
       INTEGER*4, DIMENSION(:,:) :: ip
@@ -1211,7 +1313,9 @@ MODULE Particles
       REAL*8, DIMENSION(:,:) :: pp
       REAL*8, DIMENSION(:,:,:) :: porst, satutn
       REAL*8 :: al, at, cx, cy, cz, vn, betad, D, H
+      CHARACTER (LEN=20) :: modelname
 
+      IF ( modelname == 'MacQ' ) THEN
       IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
@@ -1242,18 +1346,21 @@ MODULE Particles
                    ( 1D0 - satutn( tloc(1), tloc(2), tloc(3) ) ) ** 2.33333 ) &
                    * H * D ) / ( betad * vn )
 
+       ENDIF
       ENDIF
      END SUBROUTINE addGasDispersion2
 
      SUBROUTINE addGasDiffusion( n, ip, tloc, porst, satutn, moldiff, &
-                                  newmldif  )
+                                  newmldif, modelname  )
 
       INTEGER*4 :: n 
       INTEGER*4, DIMENSION(:) :: tloc
       INTEGER*4, DIMENSION(:,:) :: ip
       REAL*8, DIMENSION(:,:,:) :: porst, satutn
       REAL*8 :: D, H, moldiff, newmldif
+      CHARACTER (LEN=20) :: modelname
 
+      IF ( modelname == 'MacQ' ) THEN
       IF ( TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'N2' .OR.        &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'CO2' .OR.       &
            TRIM( npars%SpeciesNames( ip(n, 1) ) ) .EQ. 'O2'  ) THEN
@@ -1279,7 +1386,7 @@ MODULE Particles
       ELSE
         newmldif = moldiff 
       ENDIF
-
+      ENDIF
      END SUBROUTINE addGasDiffusion
 
      !
@@ -1287,9 +1394,9 @@ MODULE Particles
      ! when the sum of conc and background concentration is less than zero
      !
      SUBROUTINE checkConc( pp, cellv, concmgl, porst, satutn, &
-                          nx, ny, nz, ns )
+                          nx, ny, nz, ns, modelname )
 
-       INTEGER*4 :: nx, ny, nz, ns, i,j,k,l, p
+       INTEGER*4 :: nx, ny, nz, ns, i,j,k,l, p, ns_moving
        INTEGER*4 :: cnt
 !       INTEGER*4, ALLOCATABLE, TARGET :: temp(:)
        INTEGER*4, ALLOCATABLE :: temp(:)
@@ -1297,13 +1404,45 @@ MODULE Particles
        REAL*8 :: mass, cellv, cellvLiter 
        REAL*4, DIMENSION(:,:,:,:) :: concmgl
        REAL*8, DIMENSION(:,:,:) :: porst, satutn
+       CHARACTER*20 :: modelname
+
+       REAL*4 :: bconc
+
+       IF ( modelname == 'Chen1992' ) THEN
+               ns_moving = Chen1992TotalNumberOfSpecies - 2
+       ELSE IF( modelname == 'MacQ1990' ) THEN
+               ns_moving = MacQ1990TotalNumberOfSpecies - 1
+       ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+               ns_moving = MacQ1990unsatTotalNumberOfSpecies - 1
+       ELSE IF( modelname == 'MacQ' ) THEN
+               ns_moving = TotalNumberOfSpecies 
+       ELSE IF( modelname == 'VG' ) THEN
+               ns_moving = VGTotalNumberOfSpecies 
+       ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+       ENDIF
        cellvLiter = cellv * 1000 !M^3 to liter
-       DO l = 1, ns
+       DO l = 1, ns_moving
          DO i = 1, nx
           DO j = 1, ny
              DO k = 1, nz
                cnt = 0
-               DO WHILE ( concmgl( l, i, j, k ) + npars%backgroundConc( l ) &
+               IF ( modelname == 'Chen1992' ) THEN
+                 bconc =cpars%backgroundConc(l)
+               ELSE IF( modelname == 'MacQ1990' ) THEN
+                 bconc =mpars%backgroundConc(l)
+               ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+                 bconc =umpars%backgroundConc(l)
+               ELSE IF( modelname == 'MacQ' ) THEN
+                 bconc =npars%backgroundConc(l)
+               ELSE IF( modelname == 'VG' ) THEN
+                 bconc =vgpars%backgroundConc(l)
+               ELSE 
+                  WRITE(*,*) 'ERROR: non-known model name: ', modelname
+                  stop
+               ENDIF
+               DO WHILE ( concmgl( l, i, j, k ) + bconc     &
                      .LT. 0.0 .AND. cnt .LE. number_of_parts( l, i, j, k ) )
                 cnt = cnt + 1
                 mass = 0.0
@@ -1394,35 +1533,68 @@ MODULE Particles
        ENDDO
     END SUBROUTINE updateConc
 
+     SUBROUTINE ConcAddBackground( conc, nx, ny, nz, ns, modelname )
+       REAL*4, DIMENSION(:,:,:,:) :: conc
+       INTEGER*4 :: nx, ny, nz, ns, i,j,k,l, ns_moving
+       CHARACTER*20 :: modelname
 
-FUNCTION ran1(idum)
-INTEGER*4 idum,IA,IM,IQ,IR,NTAB,NDIV
-REAL*8 ran1,AM,EPS,RNMX
-PARAMETER (IA=16807,IM=2147483647,AM=1./IM,IQ=127773,IR=2836,  &
-   NTAB=32,NDIV=1+(IM-1)/NTAB,EPS=1.2e-7,RNMX=1.-EPS)
-      INTEGER j,k,iv(NTAB),iy
-      SAVE iv,iy
-      DATA iv /NTAB*0/, iy /0/
-      if (idum.le.0.or.iy.eq.0) then
-        idum=max(-idum,1)
-        do 11 j=NTAB+8,1,-1
-          k=idum/IQ
-          idum=IA*(idum-k*IQ)-IR*k
-          if (idum.lt.0) idum=idum+IM
-          if (j.le.NTAB) iv(j)=idum
-11      continue
-        iy=iv(1)
-      endif
-      k=idum/IQ
-      idum=IA*(idum-k*IQ)-IR*k
-      if (idum.lt.0) idum=idum+IM
+       REAL*4 :: bconc
 
-      j=1+iy/NDIV
-      iy=iv(j)
-      iv(j)=idum
-      ran1=min(AM*iy,RNMX)
-      return
-      END FUNCTION
+       IF ( modelname == 'Chen1992' ) THEN
+               ns_moving = Chen1992TotalNumberOfSpecies - 2
+       ELSE IF( modelname == 'MacQ1990' ) THEN
+               ns_moving = MacQ1990TotalNumberOfSpecies - 1
+       ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+               ns_moving = MacQ1990unsatTotalNumberOfSpecies - 1
+       ELSE IF( modelname == 'MacQ' ) THEN
+               ns_moving = TotalNumberOfSpecies 
+       ELSE IF( modelname == 'VG' ) THEN
+               ns_moving = VGTotalNumberOfSpecies 
+       ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+       ENDIF
+
+       DO i = 1, nx
+        DO j = 1, ny
+           DO k = 1, nz
+             DO l = 1, ns_moving
+               IF ( modelname == 'Chen1992' ) THEN
+                  bconc =cpars%backgroundConc(l)
+               ELSE IF( modelname == 'MacQ1990' ) THEN
+                  bconc =mpars%backgroundConc(l)
+               ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+                  bconc =umpars%backgroundConc(l)
+               ELSE IF( modelname == 'MacQ' ) THEN
+                  bconc =npars%backgroundConc(l)
+               ELSE IF( modelname == 'VG' ) THEN
+                  bconc =vgpars%backgroundConc(l)
+               ELSE 
+                  WRITE(*,*) 'ERROR: non-known model name: ', modelname
+                  stop
+               ENDIF
+                conc(l, i, j, k) = conc(l, i,j,k) + bconc
+             ENDDO
+             IF ( modelname == 'Chen1992' ) THEN
+                conc(4, i, j, k) = Biomass1Conc( i, j, k)
+                conc(5, i, j, k) = Biomass2Conc( i, j, k)
+             ELSE IF( modelname == 'MacQ1990' ) THEN
+                conc(3, i, j, k) = BiomassConc( i, j, k)
+             ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+                conc(3, i, j, k) = UBiomassConc( i, j, k)
+             ELSE IF( modelname == 'MacQ' ) THEN
+             ELSE IF( modelname == 'VG' ) THEN
+             ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+             ENDIF
+          ENDDO
+         ENDDO
+       ENDDO
+
+
+
+     END SUBROUTINE ConcAddBackground
 
      
 END MODULE Particles

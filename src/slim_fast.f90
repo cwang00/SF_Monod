@@ -190,7 +190,7 @@ INTEGER*4   ici(10), nplane,  wellnpart, po(4,4),planeloc, &
     ic_cats(13, 20),ts1, iii, jjj, npcurrent,partsplit, ts, planedir(10), &
  idecsteps, ii, jj, kk, ind_ic_catagory, icat, jcat, kcat, ic_cat_count, &
    kic, n_ic_timesteps, loop2, iic, cell_sink,boundary_cond(3,2),well_r(2,10000,3), &
-        rw_ind(2), n_rw_ind(2), n_rw,imax
+        rw_ind(2), n_rw_ind(2), n_rw,imax, total_part_dens(13)
 
 
 
@@ -746,7 +746,7 @@ DO iic = 1, n_constituents
     END DO
   END DO
 
- 
+  total_part_dens(iic) = n - 1 
  END IF
 
 ! pulse-type IC
@@ -869,7 +869,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 !end do !i
 !end do !j
 !end do !k
-  
+  total_part_dens(iic) = icnpart / pulse_vol / ( delv(1) * delv(2) * delv(3)  )
+
  END IF
 
 ! first Indicator IC
@@ -944,7 +945,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
       END DO  !ii
     END DO  !jj
   END DO  !kk
-  
+   
+  total_part_dens(iic) = icnpart / ic_cat_count
  END IF
 
 ! second Indicator IC
@@ -1067,6 +1069,11 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
     END DO  !jj
   END DO  !kk
   
+  total_part_dens(iic) = 0
+  DO iii = 1, n_ic_cats(iic)
+     total_part_dens(iic) = total_part_dens(iic) + ic_part_dens(iic,iii)
+  END DO
+
  END IF ! ic = 4 .or. ic =5
 
  IF ( iwflag(iic) == 5 ) THEN
@@ -1138,6 +1145,9 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
       END DO  !ii
     END DO  !jj
   END DO  !kk
+
+  total_part_dens(iic) = total_part_dens(iic) + icnpart/ic_cat_count
+
  END IF
  END IF ! ic =5
 
@@ -1180,6 +1190,12 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
   END DO
   CLOSE (124)
   PRINT*,' read ind file'
+
+  total_part_dens(iic) = 0
+  DO iii = 1, n_ic_cats(iic)
+     total_part_dens(iic) = total_part_dens(iic) + ic_part_dens(iic,iii)
+  END DO
+
   !OPEN(123,FILE=trim(ind_ic_file),STATUS='old',readonly)
   OPEN(123,FILE=trim(ind_ic_file),form='unformatted', access='stream',STATUS='old')
 
@@ -1262,10 +1278,13 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
       END DO  !ii
     END DO  !jj
   END DO  !kk
+
+     total_part_dens(iic) = total_part_dens(iic) + icnpart/ic_cat_count
  END IF
 
  END IF ! ic = 6
 
+  IF ( total_part_dens( iic ) .LE. 0 ) total_part_dens(iic) = 100
  END DO  ! DO iiC = 1, n_constituents
 
 np = n-1
@@ -1407,7 +1426,8 @@ end do
 
 end if
 
-CALL allocateParticles_Memory(xtent, ytent, ztent, n_constituents, npmax)
+CALL allocateParticles_Memory(xtent, ytent, ztent, n_constituents, &
+                  npmax, total_part_dens )
 
 !
 ! Big Time loop.  loop until time is up, reporting concentrations
@@ -1486,6 +1506,8 @@ WRITE(666,*)
 WRITE(666,*) ' Number of Particles in step: ', it, ' is ', np
 WRITE(666,*)
 
+! Clear out old number_of_parts
+   number_of_parts = 0
 !
 ! Clear out old concentrations
 !
@@ -2907,11 +2929,17 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 !
       nstepav = nstepav + passes
       
+      DO  l = 1, numax
+            ploc(l) = IDINT(p(n,l)/delc(l))  + 1
+      END DO
+
+      CALL countCellPart( n, ploc, p, ip, xtent, ytent, ztent, tnext, &
+            total_part_dens )
+
       IF (concprint >= 1) THEN
         IF (tempavg == 1) THEN
           inbounds = 1
           DO  l = 1, numax
-            ploc(l) = IDINT(p(n,l)/delc(l))  + 1
 ! ploc test
 !			  ploc(l) = INT((p(n,l)+del2v(l))/delv(l))
 !            IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
@@ -2929,7 +2957,6 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
         ELSE   ! not temporal averaging
           inbounds = 1
           DO  l = 1, numax
-            ploc(l) = IDINT(p(n,l)/delc(l)) + 1
 ! change ploc test
 !			ploc(l) = INT((p(n,l)+del2v(l))/delv(l))
 !            IF((ploc(l) <= 1).OR.(ploc(l) >= domax(l) )) THEN
@@ -3014,24 +3041,24 @@ END DO ! the big particle loop:  DO  n = 1, np
 !
 ! now do the chemical reactions
 !
-  CALL countParticles( p,ip, np, xtent, ytent, ztent, n_constituents, delv, &
-       tnext )
+!  CALL countParticles( p,ip, np, xtent, ytent, ztent, n_constituents, delv, &
+!       tnext )
 
   CALL ConcToMgperLiter( c, xtent, ytent, ztent, n_constituents )
 
-  CALL    checkConc( p, cellv, c, porosity, sat, xtent, ytent, ztent,      &
-                                                  n_constituents, modelname )  
+!  CALL    checkConc( p, cellv, c, porosity, sat, xtent, ytent, ztent,      &
+!                                                  n_constituents, modelname )  
 
   CALL maxMassAllCellSpec( p, np, ip )
 
+ CALL ConcAddBackground( c, xtent, ytent, ztent, n_constituents, modelname )
  CALL addRemoveParticles( p, ip, ipwell, irp, iprp, lastprint, &
                                     np, npmax, delv,  n_constituents, &
                                 xtent, ytent, ztent, c, ( tnext - t_prev ), &
                            porosity, sat, modelname )
 !  np = mp
-  CALL updateConc( c, p, ip, np, delc, domax, sat, porosity, Rtard, tnext )
+!  CALL updateConc( c, p, ip, np, delc, domax, sat, porosity, Rtard, tnext )
 
-  CALL ConcAddBackground( c, xtent, ytent, ztent, n_constituents, modelname )
 !
 ! now write out concentration at given time
 !
@@ -3196,9 +3223,9 @@ end if ! part_conc_write
 !
 
         IF (inbounds == 1) THEN
-          cps = p(n,4) / (cellv*sat(ploc(1),ploc(2),ploc(3))*porosity(ploc(1),ploc(2),ploc(3)))
-          IF (c(ip(n,1),ploc(1),ploc(2),ploc(3)) <= cps) THEN
-            IF (c(ip(n,1),ploc(1),ploc(2),ploc(3)) >= cmin) THEN
+          cps = ABS( 0.001 * p(n,4) / (cellv*sat(ploc(1),ploc(2),ploc(3))*porosity(ploc(1),ploc(2),ploc(3))))
+          IF (ABS( c(ip(n,1),ploc(1),ploc(2),ploc(3)) ) <= cps) THEN
+            IF ( ABS( c(ip(n,1),ploc(1),ploc(2),ploc(3) ) ) >= cmin) THEN
               IF (np < npmax) THEN
                 np = np + 1
                 p(np,1) = p(n,1) - delv(1)/100.

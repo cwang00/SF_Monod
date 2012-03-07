@@ -617,6 +617,8 @@ ELSE IF( modelname == 'MacQ' ) THEN
    CALL ReadNTransPars( ninputfile, xtent, ytent, ztent )
 ELSE IF( modelname == 'VG' ) THEN
    CALL ReadVGTransPars( ninputfile, xtent, ytent, ztent )
+ELSE IF( modelname == 'noreact' ) THEN
+   WRITE(*,*) 'No reactions!'
 ELSE 
                WRITE(*,*) 'ERROR: non-known model name: ', modelname
                stop

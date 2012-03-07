@@ -121,8 +121,7 @@ puts $fileId "$num_constituents 				! number of constituents"
 for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
 puts $fileId "$half_life($jj)				        ! radioactive half life,  \[d\]" 
 }
-#for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
-for {set jj 1} {$jj <= 1} {incr jj 1} {
+for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
 puts $nfileId "$jj   $constituent_names($jj)				        ! number to  constituent names,  \[d\]" 
 }
 puts $fileId "$alpha_l						! longitudinal disersivity, alpha_l, \[m\]"

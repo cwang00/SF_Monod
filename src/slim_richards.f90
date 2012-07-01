@@ -99,7 +99,7 @@ CHARACTER (LEN=100) ::  runname, slimfile, logfile,      &
 	headfile, phifile,head_list_file, time_file,   &
     vgafile, vgnfile, sresfile, vtk_file
 
-CHARACTER (LEN=20) :: modelname
+CHARACTER (LEN=20) :: modelname, bndcnd
 
 CHARACTER(LEN=100),allocatable :: wellbtcfile(:)
 CHARACTER(LEN=20),allocatable :: concfile(:)
@@ -604,6 +604,7 @@ DO   kk = 1, nw
   READ(99,*) wells(kk,1),wells(kk,2),wells(kk,3),wells(kk,4), wells(kk,5)
 END DO
 
+READ(99,*) bndcnd
 
 READ(99,*) modelname
 
@@ -651,7 +652,7 @@ CALL slimfast(xtent,ytent,ztent,delv,al,at,                            &
     partfile,nw,wells,welltnext,moldiff,welltnumb, r,phi,n_constituents, &
 	half_life,k_att,k_det,iv_type,press, headfile,head_list_file, time_file, &
 	 kxfile,kyfile,kzfile,vgafile,vgnfile,sresfile,npmax, give_up, epsi,vmult, &
-     vtk_file,saturated, vga_const, vgn_const, sres_sat_const, modelname)
+   vtk_file,saturated, vga_const, vgn_const, sres_sat_const, modelname, bndcnd)
 	
 
 print*, 'finished'

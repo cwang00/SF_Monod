@@ -164,8 +164,12 @@ MODULE Particles
 
          !
          ! recycle particles
-         IF ( ( ip(n,2) .EQ. 1 ) .AND. (                              &
-             ( ploc(1) .LE. 0 .OR. ploc(2) .LE. 0 .OR. ploc(3) .LE. 0 ) ) &
+         IF ( (                              &
+             ( ploc(1) .LE. 0 .OR. ploc(2) .LE. 0 .OR. ploc(3) .LE. 0 )  &
+               .OR.                                                      &
+             ( ploc(1) .GT. nx .OR. ploc(2) .GT. ny              &
+              .OR. ploc(3) .GT. nz )                                  &
+               )                                                         &
               .AND. ( pp(n, 7) .LE. tnext ) ) THEN
            IF( ALL(removed(1:totalremoved) .NE. n ) ) THEN
              totalremoved = totalremoved + 1
@@ -174,6 +178,14 @@ MODULE Particles
          ENDIF
 
      END SUBROUTINE countCellPart
+
+     SUBROUTINE forgetCellPart( )
+
+           number_of_parts = 0
+           totalremoved = 0
+           removed = 0
+
+     END SUBROUTINE forgetCellPart
 
      SUBROUTINE allocateParticles_Memory(  nx, ny, nz, ns, npmax, part_dens )
         INTEGER*4 :: nx, ny, nz, ns, npmax, i, j, k, l
@@ -241,8 +253,8 @@ MODULE Particles
      END SUBROUTINE deallocateParticles_Memory
 
 
-     SUBROUTINE addRemoveParticles( pp, ip, ipwell, irp, iprp, lastprint, &
-                              np, npmax, delv,  ns, nx, ny, nz, conc, dt_day, &
+     SUBROUTINE geochemicalReactions( pp, ip, np, npmax, delv,  &
+            ns, nx, ny, nz, conc, conc_before_average, dt_day,  &
                               porosity, sat, modelname  )
        REAL*8, DIMENSION(:,:) :: pp, lastprint
        REAL*8, DIMENSION(:,:,:) :: porosity, sat
@@ -251,7 +263,7 @@ MODULE Particles
        INTEGER*4,  DIMENSION(:) ::  irp
        REAL*8, DIMENSION(3) :: delv
        INTEGER :: ns, nx, ny, nz, i, j, k, l, m, n, idx, p, ns_moving
-       REAL*4, DIMENSION(:,:,:,:) :: conc
+       REAL*4, DIMENSION(:,:,:,:) :: conc, conc_before_average
        REAL, DIMENSION(13) :: rates
        REAL*4 :: rate, minmass,maxmass, mass, backgroundmass, particlemass
        REAL*8 :: dt_day
@@ -282,7 +294,8 @@ MODULE Particles
       DO j = 3, ny - 2
         DO k = 3, nz - 2
         
-          IF ( SUM( number_of_parts(1:ns_moving,i,j,k) ) .GT. 0 ) THEN 
+!          IF ( SUM( number_of_parts(1:ns_moving,i,j,k) ) .GT. 0 ) THEN 
+          IF ( number_of_parts(1,i,j,k) .GT. 0 ) THEN 
             IF ( modelname == 'Chen1992' ) THEN
               CALL Chen1992ReactRateAtCell( conc, i, j, k, REAL(dt_day), rates )
             ELSE IF( modelname == 'MacQ1990' ) THEN
@@ -348,11 +361,11 @@ MODULE Particles
 !                 PRINT*, 'Unknow species naem ', npars%SpeciesNames(l)
 !
 !              ENDIF
-               rate = rates( l )
+               rate = rates( l ) + ( conc(l, i, j, k) -                   &
+                               conc_before_average(l, i, j, k ) )
+
               mass = rate * delv(1) * delv(2) * delv(3) * 1000.0           &
                         * sat( i,j , k)  * porosity( i,j,k)
-               ! update concentrations
-               conc( l, i, j, k)  = conc(l, i, j, k ) + rate
 !               IF ( conc( l, i, j, k ) .LT. 0.0 ) conc( l, i, j, k ) = 0.0
               ! 
               !gases in unsaturated soil
@@ -380,6 +393,95 @@ MODULE Particles
               ENDIF
              ENDIF
 
+             ! update concentrations
+             conc( l, i, j, k)  = conc(l, i, j, k ) +     &
+                   mass / ( delv(1) * delv(2) * delv(3) * 1000.0           &
+                        * sat( i,j , k)  * porosity( i,j,k) )
+
+
+              !call particle adjustment
+!          CALL addRemoveParticlesForCell( pp, ip, mass,                 &
+!                              np, npmax, delv,  l, i, j, k, &
+!                              porosity, sat, modelname  )
+     CALL adjustParticleMassForNewCellConc( modelname, mass,  &
+                            delv, sat, porosity, np, npmax, pp,ip, l, i, j, k )
+
+           END DO
+        ENDIF !IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
+!        IF( modelname == "MacQ" ) THEN
+!         NitrifierConc( i, j, k ) = NitrifierConc( i, j, k ) + rates( 12 )
+!         DenitrifierConc( i, j, k ) = DenitrifierConc( i, j, k ) +  rates( 13 )
+!        ENDIF
+         IF ( modelname == 'Chen1992' ) THEN
+             conc(4, i, j, k) = Biomass1Conc( i, j, k)
+                conc(5, i, j, k) = Biomass2Conc( i, j, k)
+         ELSE IF( modelname == 'MacQ1990' ) THEN
+                conc(3, i, j, k) = BiomassConc( i, j, k)
+         ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+                conc(3, i, j, k) = UBiomassConc( i, j, k)
+         ELSE IF( modelname == 'MacQ' ) THEN
+         ELSE IF( modelname == 'VG' ) THEN
+         ELSE IF( modelname == 'noreact' ) THEN
+         ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+         ENDIF
+
+      END DO
+    END DO
+  END DO
+
+!       CALL removeParticles( pp, ip, ipwell, irp, iprp, lastprint, np, &
+!                             npmax, removed, totalremoved )
+    CALL markRemovedParticles( pp, removed, totalremoved )
+
+
+
+! Calculate the two biomasses
+!       DO i = 3, nx - 2
+!         DO j = 3, ny - 2
+!           DO k = 3, nz - 2
+!            IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
+!              substratename = 'NH4'
+!              rate = ReactRateAtCell( conc, i, j, k, substratename )
+!
+!              NitrifierConc( i, j, k ) = NitrifierConc( i, j, k ) +        &
+!
+!                DeltaX1( rate, NitrifierConc( i, j, k ),                   &
+!                         npars%Biomass1YieldCoeff_M_biomass_M_substrate,   &
+!                         npars%Biomass1SpecDecayConst_1_day ) * dt_day
+!
+!              substratename = 'CH2O'
+!              rate = ReactRateAtCell( conc, i, j, k, substratename )
+!              DenitrifierConc( i, j, k ) = DenitrifierConc( i, j, k ) +    &
+!                 DeltaX2( rate, DenitrifierConc( i, j, k ),                &
+!                         npars%Biomass2YieldCoeff_M_biomass_M_substrate,   &
+!                         npars%Biomass2SpecDecayConst_1_day ) * dt_day
+!        ENDIF! IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
+!      END DO
+!    END DO
+!  END DO
+
+     END SUBROUTINE geochemicalReactions
+
+     SUBROUTINE addRemoveParticlesForCell( pp, ip, cellMassChange,       &
+                              np, npmax, delv,  l, i, j, k, &
+                              porosity, sat, modelname  )
+       REAL*8, DIMENSION(:,:) :: pp, lastprint
+       REAL*8, DIMENSION(:,:,:) :: porosity, sat
+       INTEGER, DIMENSION(:,:) :: ipwell
+       INTEGER*4,  DIMENSION(:,:) :: ip, iprp
+       INTEGER*4,  DIMENSION(:) ::  irp
+       REAL*8, DIMENSION(3) :: delv
+       INTEGER ::  i, j, k, l, m, n, idx, p
+       REAL*4, DIMENSION(:,:,:,:) :: conc
+       REAL, DIMENSION(13) :: rates
+       REAL*4 :: minmass,maxmass, cellMassChange, backgroundmass, particlemass
+       INTEGER*4 ::  npmax, np
+       CHARACTER*20 substratename, modelname
+       LOGICAL :: found, recycle
+       REAL*4 :: bconc
+
               IF ( modelname == 'Chen1992' ) THEN
                bconc = cpars%backgroundConc(l)
               ELSE IF( modelname == 'MacQ1990' ) THEN
@@ -396,11 +498,13 @@ MODULE Particles
                WRITE(*,*) 'ERROR: non-known model name: ', modelname
                stop
               ENDIF
+
               backgroundmass = bconc                                        &
                            * delv(1) * delv(2) * delv(3) * 1000.0           &
                         * sat( i,j , k)  * porosity( i,j,k)
 
-              IF( number_of_parts( l, i, j, k ) == 0 .AND. mass > 0.0) THEN
+              IF( number_of_parts( l, i, j, k ) == 0 .AND.   &
+                                           cellMassChange > 0.0) THEN
 !                minmass = mass / 10.0
                 maxmass = maxParticleMass( l )
                 IF (maxmass == 0.0 ) THEN
@@ -408,9 +512,9 @@ MODULE Particles
                     maxmass = MAXVAL( maxParticleMass )
                 ENDIF
 
-                DO WHILE( mass > 0.0 )
+                DO WHILE( cellMassChange > 0.0 )
 !                 mass = mass - minmass
-                 mass = mass - maxmass
+                 cellMassChange = cellMassChange - maxmass
 !                 IF ( rmcnter2 .GT. rmcnter1 ) THEN
 !                      idx = removed( rmcnter2 )
 !                      rmcnter2 = rmcnter2 - 1
@@ -427,10 +531,10 @@ MODULE Particles
                   pp(idx,2) = ( j - 1 ) * delv( 2 ) + delv( 2 ) * ran1( 0 )
                   pp(idx,3) = ( k - 1 ) * delv( 3 ) + delv( 3 ) * ran1( 0 )
 !                  pp(idx,4) = minmass
-                  IF ( mass > 0 ) THEN
+                  IF ( cellMassChange > 0 ) THEN
                     pp(idx,4) = maxmass
                   ELSE
-                    pp(idx,4) = mass + maxmass 
+                    pp(idx,4) = cellMassChange + maxmass 
                   ENDIF
                   pp(idx,5) = DBLE(idx)
                   pp(idx,7) = timeCellAllSpec( i, j, k, pp, modelname ) 
@@ -446,19 +550,19 @@ MODULE Particles
                 ENDDO
 
               ELSE IF( number_of_parts( l, i, j, k ) == 0 .AND. &
-                                                          mass < 0.0 ) THEN
-                IF( ABS( mass ) .GT. backgroundmass ) THEN
-                  mass = - backgroundmass
+                                                cellMassChange < 0.0 ) THEN
+                IF( ABS( cellMassChange ) .GT. backgroundmass ) THEN
+                  cellMassChange = - backgroundmass
                 ENDIF
-!                minmass = ABS(mass) / 10.0
+!                minmass = ABS(cellMassChange) / 10.0
                 maxmass = maxParticleMass( l )
                 IF (maxmass == 0.0 ) THEN
 !                   maxmass = mass / 10.0
                     maxmass = MAXVAL( maxParticleMass )
                 ENDIF
-                DO WHILE( mass < 0.0 )
+                DO WHILE( cellMassChange < 0.0 )
 !                 mass = mass + minmass
-                 mass = mass + maxmass
+                 cellMassChange = cellMassChange + maxmass
 !                 backgroundmass = backgroundmass - minmass
                  backgroundmass = backgroundmass - maxmass
 !                 IF ( rmcnter2 .GT. rmcnter1 ) THEN
@@ -476,11 +580,11 @@ MODULE Particles
                   pp(idx,1) = ( i - 1 ) * delv( 1 ) + delv( 1 ) * ran1( 0 )
                   pp(idx,2) = ( j - 1 ) * delv( 2 ) + delv( 2 ) * ran1( 0 )
                   pp(idx,3) = ( k - 1 ) * delv( 3 ) + delv( 3 ) * ran1( 0 )
-                  IF (mass < 0.0 ) THEN
+                  IF (cellMassChange < 0.0 ) THEN
                     pp(idx,4) = -maxmass
                   !pp(idx,4) = -minmass
                   ELSE
-                    pp(idx,4) = mass - maxmass
+                    pp(idx,4) = cellMassChange - maxmass
                   ENDIF
                   pp(idx,5) = DBLE(idx)
                   pp(idx,7) = timeCellAllSpec( i, j, k, pp, modelname ) 
@@ -496,15 +600,15 @@ MODULE Particles
 
                 ENDDO
 
-              ELSE IF( number_of_parts(l, i, j, k ) > 0 .AND. mass > 0.0 ) THEN
+              ELSE IF( number_of_parts(l, i, j, k ) > 0 .AND. cellMassChange > 0.0 ) THEN
 
                 m = 0
-                DO WHILE( mass .GT. 0.0 .AND.              &
+                DO WHILE( cellMassChange .GT. 0.0 .AND.              &
                      m .LT.  number_of_parts( l, i,j,k ) )
 
                   m = m + 1 
                   IF( pp( part_numbers( l, i,j,k)%arr( m ), 4) .LE. 0.0 ) THEN
-                      mass = mass + pp( part_numbers(l,i,j,k)%arr( m ), 4 )
+                      cellMassChange = cellMassChange + pp( part_numbers(l,i,j,k)%arr( m ), 4 )
                       totalremoved = totalremoved + 1
 !                      IF ( rmcnter1 .GT. 0 ) THEN
 !                         rmcnter1 = rmcnter1 - 1
@@ -523,9 +627,9 @@ MODULE Particles
 !                IF( minmass .GT. mass ) THEN
 !                   minmass = mass
 !                ENDIF
-                DO WHILE( mass .GT. 0.0 )
+                DO WHILE( cellMassChange .GT. 0.0 )
 !                 mass = mass - minmass
-                 mass = mass - maxmass
+                 cellMassChange = cellMassChange - maxmass
 !                 IF ( rmcnter2 .GT. rmcnter1 ) THEN
 !                   idx = removed( rmcnter2 )
 !                   rmcnter2 = rmcnter2 - 1 
@@ -545,11 +649,11 @@ MODULE Particles
                     pp(idx,1) = ( i - 1 ) * delv( 1 ) + delv( 1 ) * ran1( 0 )
                     pp(idx,2) = ( j - 1 ) * delv( 2 ) + delv( 2 ) * ran1( 0 )
                     pp(idx,3) = ( k - 1 ) * delv( 3 ) + delv( 3 ) * ran1( 0 )
-                    IF ( mass > 0.0 ) THEN
+                    IF ( cellMassChange > 0.0 ) THEN
 !                      pp(idx,4) = minmass
                       pp(idx,4) = maxmass
                     ELSE
-                      pp(idx,4) = mass + maxmass
+                      pp(idx,4) = cellMassChange + maxmass
                     ENDIF
                     pp(idx,5) = DBLE(idx)
                     pp(idx,7) = pp( part_numbers(l,i,j,k)%arr(1), 7 ) 
@@ -582,7 +686,7 @@ MODULE Particles
                        IF( .NOT. found ) THEN
                          pp( part_numbers(l,i,j,k)%arr(m), 4 ) =             &
                              pp( part_numbers(l,i,j,k)%arr(m), 4 ) +         &
-                                      ( mass + maxmass ) /                  &
+                                      ( cellMassChange + maxmass ) /                  &
                                   ( number_of_parts(l,i,j,k) - totalremoved ) 
                        ENDIF
                      ENDDO    
@@ -591,26 +695,26 @@ MODULE Particles
                    &number of parts' 
                    STOP
                   ENDIF
-                  mass = -1.0 !exit do while
+                  cellMassChange = -1.0 !exit do while
                   np = np - 1
                  ENDIF
                  ENDDO ! DO WHILE
 
               ELSE IF( number_of_parts( l, i, j, k ) > 0 .AND. &
-                                                          mass < 0.0 ) THEN
+                                                   cellMassChange < 0.0 ) THEN
                 particlemass = 0.0
                 DO n = 1, number_of_parts(l, i,j,k )
                    particlemass = particlemass + pp( part_numbers(l,i,j,k)%arr( n ), 4 )
                 ENDDO
 
                 m = 0
-                DO WHILE( mass .LT. 0.0 .AND.              &
+                DO WHILE( cellMassChange .LT. 0.0 .AND.              &
                      m .LT.  number_of_parts( l, i,j,k ) .AND.     &
                     particlemass + backgroundmass .GT. 0.0 )
 
                   m = m + 1 
                   IF( pp( part_numbers(l,i,j,k)%arr( m ), 4) .GT. 0.0 ) THEN
-                      mass = mass + pp( part_numbers(l,i,j,k)%arr( m ), 4 )
+                      cellMassChange = cellMassChange + pp( part_numbers(l,i,j,k)%arr( m ), 4 )
                       particlemass = particlemass - pp( part_numbers(l,i,j,k)%arr(m), 4 )
                       totalremoved = totalremoved + 1
 !                      IF ( rmcnter1 .GT. 0 ) THEN
@@ -630,10 +734,10 @@ MODULE Particles
 !                IF( minmass .GT. ABS( mass ) ) THEN
 !                   minmass = ABS( mass )
 !                ENDIF
-                DO WHILE( mass < 0.0 .AND.    &
+                DO WHILE( cellMassChange < 0.0 .AND.    &
                       particlemass + backgroundmass .GT. 0.0  )
 !                 mass = mass + minmass
-                 mass = mass + maxmass
+                 cellMassChange = cellMassChange + maxmass
 !                 particlemass = particlemass - minmass
                  particlemass = particlemass - maxmass
 !                 IF ( rmcnter2 .GT. rmcnter1 ) THEN
@@ -653,11 +757,11 @@ MODULE Particles
                   pp(idx,1) = ( i - 1 ) * delv( 1 ) + delv( 1 ) * ran1( 0 )
                   pp(idx,2) = ( j - 1 ) * delv( 2 ) + delv( 2 ) * ran1( 0 )
                   pp(idx,3) = ( k - 1 ) * delv( 3 ) + delv( 3 ) * ran1( 0 )
-                  IF ( mass < 0.0 ) THEN
+                  IF ( cellMassChange < 0.0 ) THEN
 !                    pp(idx,4) = -minmass
                     pp(idx,4) = -maxmass
                   ELSE
-                    pp(idx,4) = mass - maxmass
+                    pp(idx,4) = cellMassChange - maxmass
                   ENDIF
                   pp(idx,5) = DBLE(idx)
                   pp(idx,7) = timeCellAllSpec( i, j, k, pp, modelname ) 
@@ -681,10 +785,10 @@ MODULE Particles
                          ENDIF
                        ENDDO
                        IF( .NOT. found ) THEN
-                        IF ( abs( mass - maxmass ) < backgroundmass ) THEN 
+                        IF ( abs( cellMassChange - maxmass ) < backgroundmass ) THEN 
                           pp( part_numbers(l,i,j,k)%arr(m), 4 ) =             &
                                pp( part_numbers(l,i,j,k)%arr(m), 4 ) +        &
-                                      ( mass - maxmass ) /                   &
+                                      ( cellMassChange - maxmass ) /                   &
                                   ( number_of_parts(l,i,j,k) - totalremoved ) 
                         ELSE
                           pp( part_numbers(l,i,j,k)%arr(m), 4 ) =             &
@@ -700,67 +804,141 @@ MODULE Particles
                    &number of parts' 
                    STOP
                   ENDIF
-                  mass = 1.0 !exit do while
+                  cellMassChange = 1.0 !exit do while
                   np = np - 1
                  ENDIF
                 ENDDO
             ENDIF ! IF( number_of_parts( l, i, j, k ) == 0 .AND. mass > 0.0)
-           END DO
-        ENDIF !IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
-!        IF( modelname == "MacQ" ) THEN
-!         NitrifierConc( i, j, k ) = NitrifierConc( i, j, k ) + rates( 12 )
-!         DenitrifierConc( i, j, k ) = DenitrifierConc( i, j, k ) +  rates( 13 )
-!        ENDIF
-         IF ( modelname == 'Chen1992' ) THEN
-             conc(4, i, j, k) = Biomass1Conc( i, j, k)
-                conc(5, i, j, k) = Biomass2Conc( i, j, k)
-         ELSE IF( modelname == 'MacQ1990' ) THEN
-                conc(3, i, j, k) = BiomassConc( i, j, k)
-         ELSE IF( modelname == 'MacQ1990unsat' ) THEN
-                conc(3, i, j, k) = UBiomassConc( i, j, k)
-         ELSE IF( modelname == 'MacQ' ) THEN
-         ELSE IF( modelname == 'VG' ) THEN
-         ELSE IF( modelname == 'noreact' ) THEN
-         ELSE 
+
+     END SUBROUTINE addRemoveParticlesForCell
+
+     SUBROUTINE adjustParticleMassForNewCellConc( modelname, cellMassChange,  &
+                             delv, sat, porosity, np, npmax, pp,ip, l, i, j, k )
+       REAL*8, DIMENSION(:,:) :: pp
+       INTEGER*4,  DIMENSION(:,:) :: ip
+       INTEGER ::  i, j, k, l, part, m, n
+       REAL*4 :: cellMassChange, partMassChange, backgroundmass
+       REAL*8, DIMENSION(3) :: delv
+       INTEGER*4 ::  npmax, np, idx
+       CHARACTER*20 modelname
+       REAL*4 :: bconc
+       REAL*8, DIMENSION(:,:,:) :: porosity, sat
+
+       IF ( modelname == 'Chen1992' ) THEN
+               bconc = cpars%backgroundConc(l)
+       ELSE IF( modelname == 'MacQ1990' ) THEN
+               bconc = mpars%backgroundConc(l )
+       ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+               bconc = umpars%backgroundConc(l )
+       ELSE IF( modelname == 'MacQ' ) THEN
+               bconc = npars%backgroundConc(l )
+       ELSE IF( modelname == 'VG' ) THEN
+               bconc = vgpars%backgroundConc(l)
+       ELSE IF( modelname == 'noreact' ) THEN
+                      bconc = 0.0
+       ELSE 
                WRITE(*,*) 'ERROR: non-known model name: ', modelname
                stop
-         ENDIF
+       ENDIF
 
-      END DO
-    END DO
-  END DO
+              backgroundmass = bconc                                        &
+                           * delv(1) * delv(2) * delv(3) * 1000.0           &
+                        * sat( i,j , k)  * porosity( i,j,k)
 
-!       CALL removeParticles( pp, ip, ipwell, irp, iprp, lastprint, np, &
-!                             npmax, removed, totalremoved )
-    CALL markRemovedParticles( pp, removed, totalremoved )
+!       IF( cellMassChange + backgroundmass .LT. 0 ) THEN
+!               cellMassChange = -backgroundmass
+!       ENDIF
 
+       IF ( number_of_parts( l, i, j, k) .GT. 0 ) THEN
+           partMassChange = cellMassChange / number_of_parts( l, i, j,k)
+           DO m = 1, number_of_parts( l, i, j, k)
+            part = part_numbers( l, i, j,k )%arr( m )
+            pp( part, 4 ) = pp( part, 4 ) + partMassChange
+           ENDDO 
+       ELSE
+           partMassChange = cellMassChange / 10
+           DO m = 1, 10
+                 IF ( totalremoved .GT. 0 ) THEN
+                      idx = removed( totalremoved )
+                      totalremoved = totalremoved - 1
+                 ELSE 
+                   idx = np + 1
+                   np = np + 1
+                 ENDIF
+                 IF ( np <= npmax ) THEN
+                  pp(idx,1) = ( i - 1 ) * delv( 1 ) + delv( 1 ) * ran1( 0 )
+                  pp(idx,2) = ( j - 1 ) * delv( 2 ) + delv( 2 ) * ran1( 0 )
+                  pp(idx,3) = ( k - 1 ) * delv( 3 ) + delv( 3 ) * ran1( 0 )
+                  pp(idx,4) = partMassChange
+                  pp(idx,5) = DBLE(idx)
+                  pp(idx,7) = timeCellAllSpec( i, j, k, pp, modelname ) 
+                  !pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
+                  ip(idx,1) = l
+                  ip(idx,2) = 1
 
-! Calculate the two biomasses
-!       DO i = 3, nx - 2
-!         DO j = 3, ny - 2
-!           DO k = 3, nz - 2
-!            IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
-!              substratename = 'NH4'
-!              rate = ReactRateAtCell( conc, i, j, k, substratename )
+                 ELSE
+                   PRINT*, '2 max num particles exceeded. &
+                           &increase npmax parameter ',npmax
+                   STOP
+                 ENDIF
+           ENDDO 
+        WRITE(*,*)'Warning! -------' 
+        WRITE(*,*)'   particle number is 0 for species number ', l , &
+           ' at i = ', i, ' j = ', j, ' k = ', k
+       ENDIF
+
+     END SUBROUTINE adjustParticleMassForNewCellConc
+
+!     SUBROUTINE averageConc( modelname, oldConc, newConc,  &
+!                             delv, sat, porosity, np, npmax, pp,ip, &
+!                             n_constituents, nx, ny, nz )
+!       REAL*8, DIMENSION(:,:) :: pp
+!       INTEGER*4,  DIMENSION(:,:) :: ip
+!       INTEGER ::  nx, ny, nz, i, j, k, l, part, m, n
+!       REAL*4 :: cellMassChange, partMassChange, backgroundmass
+!       REAL*8, DIMENSION(3) :: delv
+!       INTEGER*4 ::  npmax, np, idx
+!       CHARACTER*20 modelname
+!       REAL*4 :: bconc
+!       REAL*8, DIMENSION(:,:,:) :: porosity, sat
 !
-!              NitrifierConc( i, j, k ) = NitrifierConc( i, j, k ) +        &
+!       concDiff =  ( oldConc + newConc ) / 2 - newConc
 !
-!                DeltaX1( rate, NitrifierConc( i, j, k ),                   &
-!                         npars%Biomass1YieldCoeff_M_biomass_M_substrate,   &
-!                         npars%Biomass1SpecDecayConst_1_day ) * dt_day
+!       newConc = newConc + concDiff
 !
-!              substratename = 'CH2O'
-!              rate = ReactRateAtCell( conc, i, j, k, substratename )
-!              DenitrifierConc( i, j, k ) = DenitrifierConc( i, j, k ) +    &
-!                 DeltaX2( rate, DenitrifierConc( i, j, k ),                &
-!                         npars%Biomass2YieldCoeff_M_biomass_M_substrate,   &
-!                         npars%Biomass2SpecDecayConst_1_day ) * dt_day
-!        ENDIF! IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
-!      END DO
-!    END DO
-!  END DO
-
-     END SUBROUTINE addRemoveParticles
+!       IF ( modelname == 'Chen1992' ) THEN
+!               ns_moving = Chen1992TotalNumberOfSpecies - 2
+!       ELSE IF( modelname == 'MacQ1990' ) THEN
+!               ns_moving = MacQ1990TotalNumberOfSpecies - 1
+!       ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+!               ns_moving = MacQ1990unsatTotalNumberOfSpecies - 1
+!       ELSE IF( modelname == 'MacQ' ) THEN
+!               ns_moving = TotalNumberOfSpecies 
+!       ELSE IF( modelname == 'VG' ) THEN
+!               ns_moving = VGTotalNumberOfSpecies 
+!       ELSE IF( modelname == 'noreact' ) THEN
+!               ns_moving = 0
+!       ELSE 
+!               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+!               stop
+!       ENDIF
+!
+!    DO i = 3, nx - 2
+!      DO j = 3, ny - 2
+!        DO k = 3, nz - 2
+!            DO l = 1, ns_moving 
+!             cellMassChange = concDiff                                        &
+!                           * delv(1) * delv(2) * delv(3) * 1000.0           &
+!                        * sat( i,j , k)  * porosity( i,j,k)
+!
+!             CALL adjustParticleMassForNewCellConc( modelname, cellMassChange, &
+!                         delv, sat, porosity, np, npmax, pp,ip, l, i, j, k )
+!            ENDDO
+!        END DO !k
+!      END DO !j
+!    END DO !i
+!
+!        END SUBROUTINE averageConc
 
      REAL*8 FUNCTION minMassCellSpec( s, x, y, z, pp, np, delv, ip )
 
@@ -1780,9 +1958,8 @@ MODULE Particles
 
     END SUBROUTINE checkConc
 
-     SUBROUTINE ConcToMgPerLiter( conc, nx, ny, nz, ns )
+     SUBROUTINE ConcToMgPerLiter( conc )
        REAL*4, DIMENSION(:,:,:,:) :: conc
-       INTEGER*4 :: nx, ny, nz, ns, i,j,k,l
         conc = conc / 1000.0 !mg/L^3 to mg/l
     END SUBROUTINE ConcToMgPerLiter
 
@@ -1885,6 +2062,71 @@ MODULE Particles
 
 
      END SUBROUTINE ConcAddBackground
+
+     SUBROUTINE ConcRemoveBackground( conc, nx, ny, nz, ns, modelname )
+       REAL*4, DIMENSION(:,:,:,:) :: conc
+       INTEGER*4 :: nx, ny, nz, ns, i,j,k,l, ns_moving
+       CHARACTER*20 :: modelname
+
+       REAL*4 :: bconc
+
+       IF ( modelname == 'Chen1992' ) THEN
+               ns_moving = Chen1992TotalNumberOfSpecies - 2
+       ELSE IF( modelname == 'MacQ1990' ) THEN
+               ns_moving = MacQ1990TotalNumberOfSpecies - 1
+       ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+               ns_moving = MacQ1990unsatTotalNumberOfSpecies - 1
+       ELSE IF( modelname == 'MacQ' ) THEN
+               ns_moving = TotalNumberOfSpecies 
+       ELSE IF( modelname == 'VG' ) THEN
+               ns_moving = VGTotalNumberOfSpecies 
+       ELSE IF( modelname == 'noreact' ) THEN
+               ns_moving = 0
+       ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+       ENDIF
+
+       DO i = 1, nx
+        DO j = 1, ny
+           DO k = 1, nz
+             DO l = 1, ns_moving
+               IF ( modelname == 'Chen1992' ) THEN
+                  bconc =cpars%backgroundConc(l)
+               ELSE IF( modelname == 'MacQ1990' ) THEN
+                  bconc =mpars%backgroundConc(l)
+               ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+                  bconc =umpars%backgroundConc(l)
+               ELSE IF( modelname == 'MacQ' ) THEN
+                  bconc =npars%backgroundConc(l)
+               ELSE IF( modelname == 'VG' ) THEN
+                  bconc =vgpars%backgroundConc(l)
+               ELSE IF( modelname == 'noreact' ) THEN
+               ELSE 
+                  WRITE(*,*) 'ERROR: non-known model name: ', modelname
+                  stop
+               ENDIF
+                conc(l, i, j, k) = conc(l, i,j,k) - bconc
+             ENDDO
+             IF ( modelname == 'Chen1992' ) THEN
+                conc(4, i, j, k) = Biomass1Conc( i, j, k)
+                conc(5, i, j, k) = Biomass2Conc( i, j, k)
+             ELSE IF( modelname == 'MacQ1990' ) THEN
+                conc(3, i, j, k) = BiomassConc( i, j, k)
+             ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+                conc(3, i, j, k) = UBiomassConc( i, j, k)
+             ELSE IF( modelname == 'MacQ' ) THEN
+             ELSE IF( modelname == 'VG' ) THEN
+             ELSE IF( modelname == 'noreact' ) THEN
+             ELSE 
+               WRITE(*,*) 'ERROR: non-known model name: ', modelname
+               stop
+             ENDIF
+          ENDDO
+         ENDDO
+       ENDDO
+
+     END SUBROUTINE ConcRemoveBackground
 
      
 END MODULE Particles

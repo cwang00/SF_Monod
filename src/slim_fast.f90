@@ -11,7 +11,7 @@ SUBROUTINE slimfast(xtent,ytent,ztent,delv,al,at, &
     partfile,nw,well,welltnext,moldiff,welltnumb, rtard,porosity,n_constituents, &
  half_life,k_att,k_det,iv_type, press,headfile,head_list_file,time_file, kxfile,kyfile,  &
  kzfile,vgafile,vgnfile,sresfile,npmax,give_up,epsi,vmult,vtk_file, saturated, &
- vga_const, vgn_const, sres_sat_const, modelname)
+ vga_const, vgn_const, sres_sat_const, modelname, bndcnd)
 ! Slim-Fast Main Routine
 ! written by Reed M. Maxwell
 ! rmaxwell@mines.edu
@@ -195,7 +195,7 @@ INTEGER*4   ici(10), nplane,  wellnpart, po(4,4),planeloc, &
 
 
 REAL*8  tad(6), move,extemp,tdd(8),f(5),fbl(5), rand2,pdist,minpdist
-REAL*4,allocatable::c(:,:,:,:)
+REAL*4,allocatable::c(:,:,:,:), oldC(:,:,:,:)
 REAL*4 cps, cmin
 
 REAL*8,allocatable::v(:,:,:,:),mass(:,:), P(:,:),sat(:,:,:),scxyz(:,:),lastprint(:,:), ic_mass_or_conc(:, :, :), ic_time_begin(:,:), ic_time_end(:,:)
@@ -225,7 +225,7 @@ REAL*8 :: vga_const, vgn_const, sres_sat_const, bnd_Xup, bnd_Xdown,    &
                                                 bnd_Zup, bnd_Zdown
 REAL*8 :: oldloc(3), origloc(3)
 INTEGER*4 :: Xup_Ref, Xdown_Ref, Yup_Ref, Ydown_Ref, Zup_Ref, Zdown_Ref
-CHARACTER (LEN=20) :: modelname
+CHARACTER (LEN=20) :: modelname, bndcnd
 interface
 
 subroutine v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,phi,delv,nx,ny,nz,press,sat)
@@ -316,7 +316,7 @@ subroutine gen_part( icat, jcat, kcat, ic_cat_num, n_ic_cats, ic_cats,      &
                      ic_conc, ic_part_dens, particle, ip,                   &
                      delv, vel, num_of_parts,                             &
                      timestep_num, constitute_num, npmax, current_conc,     &
-                     time_begin, time_end, porosity, sat ) 
+                     time_begin, time_end, porosity, sat, bndcnd ) 
     INTEGER*4 :: icat, jcat, kcat, n_ic_cats,       &
                  num_of_parts, timestep_num,              &
                  constitute_num, npmax
@@ -330,6 +330,7 @@ subroutine gen_part( icat, jcat, kcat, ic_cat_num, n_ic_cats, ic_cats,      &
     REAL*8, DIMENSION(:, :,:,:) :: vel
     REAL*4, DIMENSION(:,:,:,:) ::  current_conc
     REAL*8, DIMENSION(:) :: delv
+    CHARACTER (LEN=20) :: bndcnd
 
 END SUBROUTINE gen_part
 
@@ -349,6 +350,7 @@ ir = 21
 imax = max(xtent,ytent,ztent)
 
 allocate(v(3,xtent,ytent,ztent), c(n_constituents,xtent,ytent,ztent), &
+       oldC(n_constituents,xtent,ytent,ztent), &
        ic_cat_num(13,xtent,ytent,ztent),                              &
        ic_cat_num_bg(13,xtent,ytent,ztent),                           &
        planefile(n_constituents),    &
@@ -358,8 +360,8 @@ allocate(v(3,xtent,ytent,ztent), c(n_constituents,xtent,ytent,ztent), &
                  hkz(xtent,ytent,ztent),vga(xtent,ytent,ztent),vgn(xtent,ytent,ztent),  &
                  sres(xtent,ytent,ztent), iprP(npmax,2), lastprint(npmax,3)) 
 
- allocate( ic_time_begin(13, 1000  ), ic_time_end( 13, 1000 ), &
-            ic_mass_or_conc( 13, 1000, 20 ) )
+ allocate( ic_time_begin(13, 3000  ), ic_time_end( 13, 3000 ), &
+            ic_mass_or_conc( 13, 3000, 20 ) )
 
 c = 0.d0
 mass = 0.d0
@@ -838,7 +840,7 @@ kk = 1
     p(n,7) = 0.0D0    !dble(n-1)*dicnstep
     iP(n,1) = iiC  
 	iP(n,2) = 1  
-    IF (concprint >= 1) THEN
+!    IF (concprint >= 1) THEN
       inbounds = 1
       DO  l = 1, numax
         ploc(l) = IDINT(p(n,l)/delv(l)) + 1
@@ -862,7 +864,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 		!print*, cellv , porosity(ploc(1),ploc(2),ploc(3)) , Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))
 		!print*, (dble(iP(n,2))*(p(n,4)))
       END IF
-    END IF  ! printing concentrations
+!    END IF  ! printing concentrations
     n = n +1
     
    END DO !!kk
@@ -918,7 +920,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             p(n,7) = 0.0D0
             iP(n,1) = iiC
             iP(n,2) = 1
-            IF (concprint >= 1) THEN
+!            IF (concprint >= 1) THEN
               inbounds = 1
               DO  l = 1, numax
                 ploc(l) = IDINT(p(n,l)/delc(l)) + 1
@@ -938,7 +940,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
                     SNGL( dble(iP(n,2))*(p(n,4))/(cellv*sat(ploc(1),ploc(2),ploc(3))*porosity(ploc(1),ploc(2),ploc(3))*Rstar) )
 
               END IF
-            END IF  ! printing concentrations
+!            END IF  ! printing concentrations
             n = n +1
           END DO
         END IF
@@ -1017,7 +1019,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 
 ! assign particles to active locations
 ! check to see if mass of ic > 0
-             IF (ic_mass_or_conc(iic,jjj,iii) > 0.D0) THEN
+!             IF (ic_mass_or_conc(iic,jjj,iii) > 0.D0) THEN
               DO  kic = 1, ic_part_dens(iic,iii)
 	            p(n,1) = delv(1)*(ran1(ir)) + DBLE(ii-1)*delv(1)
                 p(n,2) = delv(2)*(ran1(ir)) + DBLE(jj-1)*delv(2)
@@ -1031,7 +1033,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
                 p(n,7) = ic_time_begin(iic,jjj) + ran1(ir)*(ic_time_end(iic,jjj)-ic_time_begin(iic,jjj))
                 ip(n,1) = iiC
                 ip(n,2) = 1
-                IF (concprint >= 1) THEN
+!                IF (concprint >= 1) THEN
                   inbounds = 1
                   DO  l = 1, numax
                     ploc(l) = IDINT(p(n,l)/delc(l)) + 1
@@ -1050,7 +1052,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
                     c(ip(n,1),ploc(1),ploc(2),ploc(3)) = c(ip(n,1),ploc(1),ploc(2),ploc(3)) +  &
                        SNGL( dble(iP(n,2))*(p(n,4))/(cellv*sat(ploc(1),ploc(2),ploc(3))*porosity(ploc(1),ploc(2),ploc(3))*Rstar) )
                   END IF   ! inbounds?
-                END IF  ! printing concentrations?
+!                END IF  ! printing concentrations?
                 
                 n = n +1
                 IF (n > npmax) THEN
@@ -1060,7 +1062,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
                 END IF ! max parts ?
                
               END DO  ! kic
-             END IF  ! mass >0 ? 
+!             END IF  ! mass >0 ? 
             END IF  ! at a ic node
             
           END DO !iii
@@ -1103,7 +1105,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 ! 1 coic*(porosity(ploc(1),ploc(2),ploc(3))*
 !    2 cellv*dble(ic_cat_count))/dble(icnpart)
   
- IF( icnpart .GT. 0 .AND. coic .GT. 0.0 ) THEN
+ IF( icnpart .GT. 0 ) THEN
   DO kk = 1, kcat
     DO jj = 1, jcat
       DO ii = 1, icat
@@ -1119,7 +1121,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             p(n,7) = 0.0D0
             iP(n,1) = iiC
             iP(n,2) = 1
-            IF (concprint >= 1) THEN
+!            IF (concprint >= 1) THEN
               inbounds = 1
               DO  l = 1, numax
                 ploc(l) = IDINT(p(n,l)/delc(l)) + 1
@@ -1138,7 +1140,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
                     SNGL( dble(iP(n,2))*(p(n,4))/(cellv*sat(ploc(1),ploc(2),ploc(3))*porosity(ploc(1),ploc(2),ploc(3))*Rstar) )
 
               END IF
-            END IF  ! printing concentrations
+!            END IF  ! printing concentrations
             n = n +1
           END DO
         END IF
@@ -1236,7 +1238,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 ! 1 coic*(porosity(ploc(1),ploc(2),ploc(3))*
 !    2 cellv*dble(ic_cat_count))/dble(icnpart)
   
- IF( icnpart .GT. 0 .AND. coic .GT. 0.0 ) THEN
+ IF( icnpart .GT. 0 ) THEN
   DO kk = 1, kcat
     DO jj = 1, jcat
       DO ii = 1, icat
@@ -1252,7 +1254,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             p(n,7) = 0.0D0
             iP(n,1) = iiC
             iP(n,2) = 1
-            IF (concprint >= 1) THEN
+!            IF (concprint >= 1) THEN
               inbounds = 1
               DO  l = 1, numax
                 ploc(l) = IDINT(p(n,l)/delc(l)) + 1
@@ -1271,7 +1273,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
                     SNGL( dble(iP(n,2))*(p(n,4))/(cellv*sat(ploc(1),ploc(2),ploc(3))*porosity(ploc(1),ploc(2),ploc(3))*Rstar) )
 
               END IF
-            END IF  ! printing concentrations
+!            END IF  ! printing concentrations
             n = n +1
           END DO
         END IF
@@ -1346,6 +1348,8 @@ end if ! vtype
 !
 
 PRINT*, 'flag4'
+
+  CALL ConcToMgPerLiter( C)
 
 IF (concprint == 1) THEN
  DO i=1, n_constituents
@@ -1438,7 +1442,6 @@ PRINT*, 'flag 6'
 DO  it = 1, nt
 
   PRINT*, 'got to big loop'
-
 !  
 ! Read in Velocities for that time step from NUFT output
 !
@@ -1487,20 +1490,31 @@ end if ! calc'd vel ?
   
   movedir = 99
 
+  DO  n = 1, np
+      DO  l = 1, numax
+	ploc(l) = IDINT(p(n,l)/delv(l)) + 1
+      END DO
+    CALL countCellPart( n, ploc, p, ip, xtent, ytent, ztent, tnext, &
+            total_part_dens )
+  END DO
+
 DO iic = 1, n_constituents
- IF (iwflag(iic) == 6) THEN
   !
   ! generate particles for the 1st time step
   !
+  IF (iwflag(iic) == 6) THEN
   np = np + 1
   CALL gen_part( icat, jcat, kcat, ic_cat_num(iic,:,:,:) , n_ic_cats(iic), &
             ic_cats(iic,:),  ic_mass_or_conc(iic, :,:), ic_part_dens(iic,:), &
-             p, ip, delv, v, np, it, iic, npmax, C,                        &
-             ic_time_begin( iic, it ), ic_time_end( iic, it ), porosity, sat )
+             p, ip, delv, v, np, it, iic, npmax, C,  &
+          ic_time_begin( iic, it ), ic_time_end( iic, it ), porosity, sat, &
+           bndcnd )
   np = np - 1
- END IF ! ic = 6
 
- END DO  ! DO iiC = 1, n_constituents
+  END IF ! ic = 6
+END DO  ! DO iiC = 1, n_constituents
+
+ CALL forgetCellPart()
 
 WRITE(666,*)
 WRITE(666,*) ' Number of Particles in step: ', it, ' is ', np
@@ -1511,6 +1525,8 @@ WRITE(666,*)
 !
 ! Clear out old concentrations
 !
+   oldC = c
+   CALL ConcAddBackground( oldC, xtent, ytent, ztent, n_constituents, modelname )
    c = 0.0D0
   
  ! print*, C(1,1,1,1)
@@ -2933,7 +2949,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             ploc(l) = IDINT(p(n,l)/delc(l))  + 1
       END DO
 
-      CALL countCellPart( n, ploc, p, ip, xtent, ytent, ztent, tnext, &
+    CALL countCellPart( n, ploc, p, ip, xtent, ytent, ztent, tnext, &
             total_part_dens )
 
       IF (concprint >= 1) THEN
@@ -3044,7 +3060,7 @@ END DO ! the big particle loop:  DO  n = 1, np
 !  CALL countParticles( p,ip, np, xtent, ytent, ztent, n_constituents, delv, &
 !       tnext )
 
-  CALL ConcToMgperLiter( c, xtent, ytent, ztent, n_constituents )
+  CALL ConcToMgperLiter( c )
 
 !  CALL    checkConc( p, cellv, c, porosity, sat, xtent, ytent, ztent,      &
 !                                                  n_constituents, modelname )  
@@ -3052,10 +3068,12 @@ END DO ! the big particle loop:  DO  n = 1, np
   CALL maxMassAllCellSpec( p, np, ip )
 
  CALL ConcAddBackground( c, xtent, ytent, ztent, n_constituents, modelname )
- CALL addRemoveParticles( p, ip, ipwell, irp, iprp, lastprint, &
-                                    np, npmax, delv,  n_constituents, &
-                                xtent, ytent, ztent, c, ( tnext - t_prev ), &
+!   OldC = ( OldC + C ) / 2
+  Oldc = C
+ CALL geochemicalReactions( p, ip, np, npmax, delv,  n_constituents, &
+                           xtent, ytent, ztent, OldC, c, ( tnext - t_prev ), &
                            porosity, sat, modelname )
+ C = OldC 
 !  np = mp
 !  CALL updateConc( c, p, ip, np, delc, domax, sat, porosity, Rtard, tnext )
 
@@ -3255,6 +3273,9 @@ end if ! part_conc_write
       END DO ! particle split
     END IF ! part split ?
 
+
+ CALL ConcRemoveBackground( c, xtent, ytent, ztent, n_constituents, modelname )
+ CALL forgetCellPart()
 !
 ! Next timestep
 !

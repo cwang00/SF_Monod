@@ -219,6 +219,16 @@ for {set ii 1} {$ii <= $number_wells} {incr ii 1} {
 puts $fileId "$well_x_location($ii) , $well_y_location($ii) , $well_screen_top($ii) , $well_screen_bottom($ii) , $well_pumping_rate($ii) "
 }
 
+if {[info exists bdy_cond ]} {
+   if { $bdy_cond == "const_conc" } {
+       puts $fileId "const_conc                      !const conc boundary"
+   } else {
+       puts $fileId  "const_flux                    !const flux boundary" 
+   }
+} else {
+puts $fileId  "const_flux                          !const flux boundary" 
+}
+
 puts $fileId "$modelname                           !select which reaction model"
 
 for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {

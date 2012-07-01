@@ -28,12 +28,12 @@ CHARACTER (LEN=100)      :: vtk_file
 
 INTEGER*4 i,j,k, l
 CHARACTER*8 ctime
-CHARACTER*12 cfmat
+CHARACTER*14 cfmat
 
 !
 !      Open File
 !
-write(cfmat, '(A,I6,5A)') '(', ixlim, 'F9.3)'
+write(cfmat, '(A,I6,7A)') '(', ixlim, 'F16.10)'
 Write(ctime,'(i8.8)') icycle
 OPEN(15,FILE=trim(vtk_file)//'.'//ctime//'.gnuplot')
 

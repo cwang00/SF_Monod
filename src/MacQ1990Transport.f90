@@ -17,7 +17,8 @@ MODULE MacQ1990Transport
      REAL :: Y    ! biomass yield coefficient
      REAL :: r    ! Utilizaton ratio, X 
      REAL :: decay ! biomass decay coefficient
-     REAL, DIMENSION(MacQ1990TotalNumberOfSpecies)::backgroundConc
+!     REAL, DIMENSION(MacQ1990TotalNumberOfSpecies)::backgroundConc
+     REAL, ALLOCATABLE::backgroundConc(:,:,:,:)
    END TYPE MacQ1990Parameters
 
    REAL, ALLOCATABLE :: BiomassConc(:,:,:)
@@ -30,7 +31,25 @@ MODULE MacQ1990Transport
       IMPLICIT NONE
 
       CHARACTER(LEN=100), INTENT(IN) :: mparfile
-      INTEGER :: I, J, K, idx, nx, ny, nz
+      CHARACTER(LEN=128) :: bgConcType
+      CHARACTER(LEN=500) :: bgConcPFBFile
+      INTEGER :: I, J, K,L,M,N, idx, nx, ny, nz
+      REAL*8 :: bgConcValue, dx, dy, dz
+      REAL*8 :: temp(nx,ny,nz)
+      INTEGER*4 :: nx1, ny1, nz1
+interface
+
+    SUBROUTINE pf_read(x,filename,nx,ny,nz,dx2,dy2,dz2)
+    real*8  :: x(:,:,:)
+    character*500 :: filename
+    integer*4 :: nx
+    integer*4 :: ny
+    integer*4 :: nz
+    real*8  :: dx2
+    real*8  :: dy2
+    real*8  :: dz2
+    END SUBROUTINE pf_read
+end interface
       OPEN(98, FILE = mparfile, STATUS = 'old' ) 
 
       DO I = 1, MacQ1990TotalNumberOfSpecies
@@ -44,8 +63,31 @@ MODULE MacQ1990Transport
      READ(98,*) mpars%Y
      READ(98,*) mpars%r ! Utilization ratio, X
      READ(98,*) mpars%decay
+
+     ALLOCATE( mpars%backgroundConc(MacQ1990TotalNumberOfSpecies,nx, ny, nz ) )
+
      DO I = 1, MacQ1990TotalNumberOfSpecies
-        READ(98,*)  mpars%backgroundConc( I )
+        READ(98,*) bgConcType
+        IF ( TRIM( bgConcType  ) .eq. 'const' ) THEN
+           READ(98, *) bgConcValue
+           mpars%backgroundConc(I, :, :, : ) = bgConcValue
+        ELSE IF ( TRIM( bgConcType ) .eq. 'PFBFile' ) THEN
+           READ(98, *) bgConcPFBFile
+           CALL PF_READ( temp, bgConcPFBFile, &
+                          nx1, ny1, nz1, &
+                           dx, dy, dz )
+            DO L = 1, nx
+             DO M = 1, ny
+              DO N = 1, nz
+               mpars%backgroundConc(I,L,M,N) = temp(L,M,N)
+              END DO
+             END DO
+           END DO
+        ELSE
+                WRITE(*,*) 'ERROR: UNKNOWN Background concentration type ', &
+                            bgConcType 
+                STOP
+        ENDIF
      END DO
      CLOSE(98)
      ALLOCATE( BiomassConc(nx, ny, nz) )
@@ -53,7 +95,7 @@ MODULE MacQ1990Transport
      DO I = 1, nx
        DO J = 1, ny
          DO K = 1, nz
-          BiomassConc( I, J, K ) = mpars%backgroundConc(3)
+          BiomassConc( I, J, K ) = mpars%backgroundConc(3, I, J,K)
          END DO  
        END DO
      END DO
@@ -94,10 +136,10 @@ MODULE MacQ1990Transport
 
       NEQ = MacQ1990TotalNumberOfSpecies 
 
-      Y(1) = conc( 1, xloc, yloc, zloc ) +        &
-                        mpars%backgroundConc( 1 )     ! Substrate
-      Y(2) = conc( 2, xloc, yloc, zloc )  +       &
-                        mpars%backgroundConc( 2 ) ! electron acceptor
+      Y(1) = conc( 1, xloc, yloc, zloc ) !+        &
+!                        mpars%backgroundConc( 1 )     ! Substrate
+      Y(2) = conc( 2, xloc, yloc, zloc ) ! +       &
+!                        mpars%backgroundConc( 2 ) ! electron acceptor
    !   Y(3) = conc( 3, xloc, yloc, zloc ) +       &
    !                     mpars%backgroundConc( 3 ) ! biomass
       Y(3) = BiomassConc( xloc, yloc, zloc ) 

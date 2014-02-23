@@ -14,15 +14,15 @@
 !    You should have received a copy of the GNU General Public License
 !    along with SLIM-Fast in /src/gpl.txt.  If not, see <http://www.gnu.org/licenses/>.
 
-subroutine v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,phi,delv,nx,ny,nz,press,sat) 
+subroutine v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,phi,delv,nx,ny,nz,press,sat, mask) 
 
 real*8 :: delv(3),heads, m,temp1,temp2,temp3,hstaru,hstard
 integer*4 i,j,k, nx,ny,nz,press,udir
 real*8  :: phi(:,:,:)
 !real*8  phi(nx,ny,nz)
-real*8  :: v(:,:,:,:),hkx(:,:,:),hky(:,:,:),hkz(:,:,:),sat(:,:,:),vga(:,:,:),vgn(:,:,:)
+real*8  :: v(:,:,:,:),hkx(:,:,:),hky(:,:,:),hkz(:,:,:),sat(:,:,:),vga(:,:,:),vgn(:,:,:), mask(:,:,:)
 !real*8   v(3,nx,ny,nz)
-character(100) :: headfile
+character(500) :: headfile
 real*8 x0,y0,z0, kr, kr1, theta
 real*8, allocatable :: head(:,:,:),scx(:),scy(:),scz(:)  !,kr(:,:,:)
 
@@ -30,7 +30,7 @@ real*8, allocatable :: head(:,:,:),scx(:),scy(:),scz(:)  !,kr(:,:,:)
 interface
     SUBROUTINE pf_read(x,filename,nx,ny,nz,dx2,dy2,dz2)
     real*8  :: x(:,:,:)
-    character*100 :: filename
+    character*500 :: filename
     integer*4 :: nx
     integer*4 :: ny
     integer*4 :: nz
@@ -64,6 +64,17 @@ scz = 1.0d0
 !call pf_read(hkz(:,:,:),kzfile,nx,ny,nz,delv(1),delv(2),delv(3))
 
 call pf_read(head,headfile,nx,ny,nz,delv(1),delv(2),delv(3))
+
+! set head/press in the inactive cells to be the same as the top layer
+DO i = 1, nx
+  DO j = 1, ny
+    DO k = 2,  nz
+      IF ( ABS( mask(i,j,k) ) .LT. 0.00000001) THEN
+        head(i,j,k) = head(i,j,k-1)
+      ENDIF
+    END DO !k
+  END DO !j
+END DO !i
 
 
 !print*, allocated(x)

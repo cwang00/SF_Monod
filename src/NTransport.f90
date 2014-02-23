@@ -59,7 +59,8 @@ MODULE NTransport
      REAL :: K_b_3_cm_mday
      REAL :: Acc_1_cm
      REAL :: Soil_bulk_den_g_cm3
-     REAL, DIMENSION(TotalNumberOfSpecies)::backgroundConc
+!     REAL, DIMENSION(TotalNumberOfSpecies)::backgroundConc
+     REAL, ALLOCATABLE::backgroundConc(:,:,:,:)
      REAL :: MYNPARS
    END TYPE NTransParameters
 
@@ -74,7 +75,26 @@ MODULE NTransport
       IMPLICIT NONE
 
       CHARACTER(LEN=100), INTENT(IN) :: nparfile
-      INTEGER :: I, J, K, idx, nx, ny, nz
+      CHARACTER(LEN=128) :: bgConcType
+      CHARACTER(LEN=500) :: bgConcPFBFile
+      INTEGER :: I, J, K, L, M, N, idx, nx, ny, nz
+      REAL*8 :: bgConcValue, dx, dy, dz
+      REAL*8 :: temp(nx,ny,nz)
+      INTEGER*4 :: nx1, ny1, nz1
+interface
+
+    SUBROUTINE pf_read(x,filename,nx,ny,nz,dx2,dy2,dz2)
+    real*8  :: x(:,:,:)
+    character*500 :: filename
+    integer*4 :: nx
+    integer*4 :: ny
+    integer*4 :: nz
+    real*8  :: dx2
+    real*8  :: dy2
+    real*8  :: dz2
+    END SUBROUTINE pf_read
+end interface
+
       OPEN(98, FILE = nparfile, STATUS = 'old' ) 
 
       DO I = 1, TotalNumberOfSpecies
@@ -119,8 +139,31 @@ MODULE NTransport
      READ(98,*) npars%K_b_3_cm_mday
      READ(98,*) npars%Acc_1_cm
      READ(98,*) npars%Soil_bulk_den_g_cm3
+
+     ALLOCATE( npars%backgroundConc(TotalNumberOfSpecies,nx, ny, nz ) )
+
      DO I = 1, TotalNumberOfSpecies
-        READ(98,*)  npars%backgroundConc( I )
+
+        READ(98,*) bgConcType
+        IF ( TRIM( bgConcType  ) .eq. 'const' ) THEN
+           READ(98, *) bgConcValue
+           npars%backgroundConc(I, :, :, : ) = bgConcValue
+        ELSE IF ( TRIM( bgConcType ) .eq. 'PFBFile' ) THEN
+           READ(98, *) bgConcPFBFile
+           CALL PF_READ( temp, bgConcPFBFile, nx1, ny1, nz1, &
+                           dx, dy, dz )
+            DO L = 1, nx
+             DO M = 1, ny
+              DO N = 1, nz
+               npars%backgroundConc(I,L,M,N) = temp(L,M,N)
+              END DO
+             END DO
+           END DO
+        ELSE
+                WRITE(*,*) 'ERROR: UNKNOWN Background concentration type ', &
+                            bgConcType 
+                STOP
+        ENDIF
      END DO
      CLOSE(98)
   
@@ -446,7 +489,8 @@ MODULE NTransport
 !              ( Ca / 1000 / CaMoleculeWeight )
 !
 
-   D_HCO3 = ( 4 * HCO3MoleculeWeight ) / ( 5 *  CH2OMoleculeWeight ) *       &
+!   D_HCO3 = ( 4 * HCO3MoleculeWeight ) / ( 5 *  CH2OMoleculeWeight ) *       &
+   D_HCO3 =  4  / ( 5 *  CH2OMoleculeWeight * 1000.0 ) *       &
                  R3( npars%DenitOxMaxRate_1_day,  X2 ,                       &
                      CH2O, NO3, O2,                                          &
                      npars%NO3HalfSaturationConst_mg_l,                      &
@@ -604,15 +648,15 @@ MODULE NTransport
                         conc( SpeciesNameToInd('CH2O'),  & 
                               xloc, yloc, zloc ) +                            &
                         npars%backgroundConc( SpeciesNameToInd(               &
-                                   'CH2O') ),              &
+                                   'CH2O'), xloc, yloc, zloc ),              &
                         conc( SpeciesNameToInd( 'O2'),    &
                               xloc, yloc, zloc )  +                           &
                         npars%backgroundConc( SpeciesNameToInd(               &
-                                  'O2') ),                &
+                                  'O2'), xloc, yloc, zloc ),                &
                         conc( SpeciesNameToInd('NO3'),   &
                               xloc, yloc, zloc ) +                            &
                         npars%backgroundConc( SpeciesNameToInd(               &
-                                 'NO3') ),               &
+                                 'NO3'), xloc, yloc, zloc ),               &
                               DenitrifierConc( xloc, yloc, zloc ) )
 
      ELSE IF( TRIM(specName) .eq. 'NH4' ) THEN
@@ -621,11 +665,11 @@ MODULE NTransport
                     conc( SpeciesNameToInd( 'NH4'),    &
                          xloc, yloc, zloc )    +                           &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'NH4') ),            &
+                                  'NH4'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'O2'),     &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'O2') ),             &
+                                  'O2'), xloc, yloc, zloc ),             &
                     NitrifierConc( xloc, yloc, zloc ) )
 
      ELSE IF( TRIM(specName) .eq. 'NO3' ) THEN
@@ -633,21 +677,21 @@ MODULE NTransport
                     conc( SpeciesNameToInd( 'NO3'),    &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'NO3') ),            &
+                                  'NO3'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'NH4'),    &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'NH4') ),            &
+                                  'NH4'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'O2'),     &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'O2') ),             &
+                                  'O2'), xloc, yloc, zloc ),             &
                     NitrifierConc( xloc, yloc, zloc ),                     &
                     DenitrifierConc( xloc, yloc, zloc ),                   &
                     conc( SpeciesNameToInd( 'CH2O'),   &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'CH2O') )            &
+                                  'CH2O'), xloc, yloc, zloc )            &
                          )
                          
      ELSE IF( TRIM(specName) .eq. 'O2' ) THEN
@@ -655,17 +699,17 @@ MODULE NTransport
                     conc( SpeciesNameToInd( 'NH4'),    &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'NH4') ),            &
+                                  'NH4'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'O2'),     &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'O2') ),             &
+                                  'O2'), xloc, yloc, zloc ),             &
                     NitrifierConc( xloc, yloc, zloc ),                     &
                     DenitrifierConc( xloc, yloc, zloc ),                   &
                     conc( SpeciesNameToInd( 'CH2O'),   &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'CH2O') )            &
+                                  'CH2O'), xloc, yloc, zloc )            &
                          )
 
      ELSE IF( TRIM(specName) .eq. 'CO2' ) THEN
@@ -673,76 +717,76 @@ MODULE NTransport
                     conc( SpeciesNameToInd( 'O2'),     &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'O2') ),             &
+                                  'O2'), xloc, yloc, zloc ),             &
                     DenitrifierConc( xloc, yloc, zloc ),                   &
                     conc( SpeciesNameToInd( 'NO3'),    &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'NO3') ),            &
+                                  'NO3'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'CH2O'),   &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'CH2O') ),           &
+                                  'CH2O'), xloc, yloc, zloc ),           &
                     conc( SpeciesNameToInd( 'CO2'),    &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'CO2') ),            &
+                                  'CO2'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'HCO3'),   &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'HCO3') ),           &
+                                  'HCO3'), xloc, yloc, zloc ),           &
                     conc( SpeciesNameToInd( 'H'),      &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'H') ),              &
+                                  'H'), xloc, yloc, zloc ),              &
                     conc( SpeciesNameToInd( 'OH'),     &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'OH') ),             &
+                                  'OH'), xloc, yloc, zloc ),             &
                     conc( SpeciesNameToInd( 'Ca2'),     &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'Ca2') )              &
+                                  'Ca2'), xloc, yloc, zloc )              &
                          )
      ELSE IF( TRIM(specName) .eq. 'HCO3' ) THEN
        ReactRateAtCell =  D_HCO3(                                          &
                     conc( SpeciesNameToInd( 'O2'),     &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'O2') ),             &
+                                  'O2'), xloc, yloc, zloc ),             &
                     DenitrifierConc( xloc, yloc, zloc ),                   &
                     conc( SpeciesNameToInd( 'NO3'),    &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'NO3') ),            &
+                                  'NO3'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'CH2O'),   &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'CH2O') ),           &
+                                  'CH2O'), xloc, yloc, zloc ),           &
                     conc( SpeciesNameToInd( 'CO2'),    &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'CO2') ),            &
+                                  'CO2'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'HCO3'),   &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'HCO3') ),           &
+                                  'HCO3'), xloc, yloc, zloc ),           &
                     conc( SpeciesNameToInd( 'H'),      &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'H') ),              &
+                                  'H'), xloc, yloc, zloc ),              &
                     conc( SpeciesNameToInd( 'OH'),     &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'OH') ),             &
+                                  'OH'), xloc, yloc, zloc ),             &
                     conc( SpeciesNameToInd( 'Ca2'),     &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'Ca2') ),             &
+                                  'Ca2'), xloc, yloc, zloc ),             &
                     conc( SpeciesNameToInd( 'CO3'),    &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'CO3') )             &
+                                  'CO3'), xloc, yloc, zloc )             &
                          )
 
      ELSE IF( TRIM(specName) .eq. 'H' ) THEN
@@ -750,32 +794,32 @@ MODULE NTransport
                     conc( SpeciesNameToInd( 'O2'),     &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'O2') ),             &
+                                  'O2'), xloc, yloc, zloc ),             &
                     conc( SpeciesNameToInd( 'NH4'),    &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'NH4') ),            &
+                                  'NH4'), xloc, yloc, zloc ),            &
                     NitrifierConc( xloc, yloc, zloc ),                     &
                     conc( SpeciesNameToInd( 'CO2'),    &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'CO2') ),            &
+                                  'CO2'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'HCO3'),   &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'HCO3') ),           &
+                                  'HCO3'), xloc, yloc, zloc ),           &
                     conc( SpeciesNameToInd( 'H'),      &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'H') ),              &
+                                  'H'), xloc, yloc, zloc ),              &
                     conc( SpeciesNameToInd( 'OH'),     &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'OH') ),             &
+                                  'OH'), xloc, yloc, zloc ),             &
                     conc( SpeciesNameToInd( 'Ca2'),     &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'Ca2') )              &
+                                  'Ca2'), xloc, yloc, zloc )              &
                          )
        
      ELSE IF( TRIM(specName) .eq. 'CO3' ) THEN
@@ -783,19 +827,19 @@ MODULE NTransport
                     conc( SpeciesNameToInd( 'CO3'),    &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'CO3') ),            &
+                                  'CO3'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'HCO3'),   &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'HCO3') ),           &
+                                  'HCO3'), xloc, yloc, zloc ),           &
                     conc( SpeciesNameToInd( 'OH'),     &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'OH') ),             &
+                                  'OH'), xloc, yloc, zloc ),             &
                     conc( SpeciesNameToInd( 'Ca2'),     &
                          xloc, yloc, zloc ) +                              &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'Ca2') )              &
+                                  'Ca2'), xloc, yloc, zloc )              &
                          )
 
      ELSE IF( TRIM(specName) .eq. 'Ca2' ) THEN
@@ -803,23 +847,23 @@ MODULE NTransport
                     conc( SpeciesNameToInd( 'CO3'),  &
                          xloc, yloc, zloc )  +                           &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'CO3') ),          &
+                                  'CO3'), xloc, yloc, zloc ),          &
                     conc( SpeciesNameToInd( 'HCO3'), &
                          xloc, yloc, zloc )  +                           &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'HCO3') ),         &
+                                  'HCO3'), xloc, yloc, zloc ),         &
                     conc( SpeciesNameToInd( 'H'),    &
                          xloc, yloc, zloc ) +                            &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'H') ),            &
+                                  'H'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'Ca2'),   &
                          xloc, yloc, zloc )  +                           &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'Ca2') ),           &
+                                  'Ca2'), xloc, yloc, zloc ),           &
                     conc( SpeciesNameToInd( 'CO2'),  &
                          xloc, yloc, zloc ) +                            &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'CO2') )           &
+                                  'CO2'), xloc, yloc, zloc )           &
                          )
 
      ELSE IF( TRIM(specName) .eq. 'OH' ) THEN
@@ -827,38 +871,38 @@ MODULE NTransport
                     conc( SpeciesNameToInd( 'H'),    &
                          xloc, yloc, zloc ) +                            &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'H') ),            &
+                                  'H'), xloc, yloc, zloc ),            &
                     conc( SpeciesNameToInd( 'OH'),   &
                          xloc, yloc, zloc )    +                         &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'OH') ),           &
+                                  'OH'), xloc, yloc, zloc ),           &
                     conc( SpeciesNameToInd( 'CO2'),  &
                          xloc, yloc, zloc ) +                            &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'CO2') ),           &
+                                  'CO2'), xloc, yloc, zloc ),           &
                     conc( SpeciesNameToInd( 'HCO3'), &
                          xloc, yloc, zloc )  +                           &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'HCO3') ),         &
+                                  'HCO3'), xloc, yloc, zloc ),         &
                     conc( SpeciesNameToInd( 'CO3'),    &
                          xloc, yloc, zloc )  +                             &
                         npars%backgroundConc( SpeciesNameToInd(            &
-                                  'CO3') )                               &
+                                  'CO3'), xloc, yloc, zloc )               &
                          )
      ELSE IF( TRIM(specName) .eq. 'N2' ) THEN
        ReactRateAtCell =  D_N2(                                          &
                     conc( SpeciesNameToInd( 'CH2O'), &
                          xloc, yloc, zloc ) +                            &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'CH2O') ),         &
+                                  'CH2O'), xloc, yloc, zloc ),         &
                     conc( SpeciesNameToInd( 'O2'),   &
                          xloc, yloc, zloc ) +                            &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'O2') ),           &
+                                  'O2'), xloc, yloc, zloc ),           &
                     conc( SpeciesNameToInd( 'NO3'),  &
                          xloc, yloc, zloc )  +                           &
                         npars%backgroundConc( SpeciesNameToInd(          &
-                                  'NO3') ),          &
+                                  'NO3'), xloc, yloc, zloc ),          &
                     DenitrifierConc( xloc, yloc, zloc ) )
      ELSE 
        WRITE(*,*) 'ERROR: WRONG Species Name ', specName
@@ -878,38 +922,44 @@ MODULE NTransport
 
 !      WRITE(*,*) 'LOCX = ', xloc, ' LOCY = ', yloc, ' LOCZ = ', zloc
       NEQ = TotalNumberOfSpecies + 2
-      Y(1) = conc( SpeciesNameToInd( 'NH4'), xloc, yloc, zloc ) +        &
-                        npars%backgroundConc( SpeciesNameToInd(          &
-                                  'NH4') )     ! NH4 
-      Y(2) = conc( SpeciesNameToInd( 'NO3'), xloc, yloc, zloc )  +       &
-                        npars%backgroundConc( SpeciesNameToInd(          &
-                                  'NO3') )
-      Y(3) = conc( SpeciesNameToInd( 'CH2O'), xloc, yloc, zloc ) +       &
-                        npars%backgroundConc( SpeciesNameToInd(          &
-                                  'CH2O') )
-      Y(4) = conc( SpeciesNameToInd( 'O2'), xloc, yloc, zloc )    +      &
-                        npars%backgroundConc( SpeciesNameToInd(          &
-                                  'O2') )
-      Y(5) = ( conc( SpeciesNameToInd( 'CO2'),  xloc, yloc, zloc )  +    &
-               npars%backgroundConc( SpeciesNameToInd(  'CO2') ) ) /     &
-               ( CO2MoleculeWeight * 1000.0 ) ! mg/l to M
-      Y(6) = ( conc( SpeciesNameToInd( 'HCO3'),  xloc, yloc, zloc ) +    &
-                  npars%backgroundConc( SpeciesNameToInd( 'HCO3') ) ) /  &
-                  ( HCO3MoleculeWeight * 1000.0 ) ! mg/l to M
-      Y(7) = ( conc( SpeciesNameToInd( 'H'),  xloc, yloc, zloc )    +    &
-                    npars%backgroundConc( SpeciesNameToInd( 'H') ) ) /   &
-                  ( HMoleculeWeight * 1000.0 ) ! mg/l to M
-      Y(8) = ( conc( SpeciesNameToInd( 'CO3'),  xloc, yloc, zloc ) +     &
-               npars%backgroundConc( SpeciesNameToInd( 'CO3') ) )   /    &
-                  ( CO3MoleculeWeight * 1000.0 ) ! mg/l to M
-      Y(9) = ( conc( SpeciesNameToInd( 'Ca2'),  xloc, yloc, zloc ) +     &
-               npars%backgroundConc( SpeciesNameToInd(  'Ca2') ) )  /    &
-                  ( CaMoleculeWeight * 1000.0 ) ! mg/l to M
-      Y(10) = conc( SpeciesNameToInd( 'N2'),  xloc, yloc, zloc ) +       &
-                   npars%backgroundConc( SpeciesNameToInd( 'N2') )
-      Y(11) = ( conc( SpeciesNameToInd( 'OH'),  xloc, yloc, zloc ) +     &
-                  npars%backgroundConc( SpeciesNameToInd( 'OH') ) ) /    &
-                  ( OHMoleculeWeight * 1000.0 ) ! mg/l to M
+      Y(1) = conc( SpeciesNameToInd( 'NH4'), xloc, yloc, zloc ) ! +        &
+                  !       npars%backgroundConc( SpeciesNameToInd(          &
+!                                  'NH4') )     ! NH4 
+      Y(2) = conc( SpeciesNameToInd( 'NO3'), xloc, yloc, zloc ) !  +       &
+                   !      npars%backgroundConc( SpeciesNameToInd(          &
+                    !               'NO3') )
+      Y(3) = conc( SpeciesNameToInd( 'CH2O'), xloc, yloc, zloc ) ! +       &
+                   !    npars%backgroundConc( SpeciesNameToInd(          &
+                   !              'CH2O') )
+      Y(4) = conc( SpeciesNameToInd( 'O2'), xloc, yloc, zloc )  ! +      &
+                   !    npars%backgroundConc( SpeciesNameToInd(          &
+                   !              'O2') )
+      Y(5) =  conc( SpeciesNameToInd( 'CO2'),  xloc, yloc, zloc ) 
+!      Y(5) = ( conc( SpeciesNameToInd( 'CO2'),  xloc, yloc, zloc )  +    &
+!               npars%backgroundConc( SpeciesNameToInd(  'CO2') ) ) /     &
+!               ( CO2MoleculeWeight * 1000.0 ) ! mg/l to M
+      Y(6) =  conc( SpeciesNameToInd( 'HCO3'),  xloc, yloc, zloc )
+!      Y(6) = ( conc( SpeciesNameToInd( 'HCO3'),  xloc, yloc, zloc ) +    &
+!                  npars%backgroundConc( SpeciesNameToInd( 'HCO3') ) ) /  &
+!                  ( HCO3MoleculeWeight * 1000.0 ) ! mg/l to M
+      Y(7) =  conc( SpeciesNameToInd( 'H'),  xloc, yloc, zloc )
+!      Y(7) = ( conc( SpeciesNameToInd( 'H'),  xloc, yloc, zloc )    +    &
+!                    npars%backgroundConc( SpeciesNameToInd( 'H') ) ) /   &
+!                  ( HMoleculeWeight * 1000.0 ) ! mg/l to M
+      Y(8) =  conc( SpeciesNameToInd( 'CO3'),  xloc, yloc, zloc ) 
+!      Y(8) = ( conc( SpeciesNameToInd( 'CO3'),  xloc, yloc, zloc ) +     &
+!               npars%backgroundConc( SpeciesNameToInd( 'CO3') ) )   /    &
+!                  ( CO3MoleculeWeight * 1000.0 ) ! mg/l to M
+      Y(9) =  conc( SpeciesNameToInd( 'Ca2'),  xloc, yloc, zloc )
+!      Y(9) = ( conc( SpeciesNameToInd( 'Ca2'),  xloc, yloc, zloc ) +     &
+!               npars%backgroundConc( SpeciesNameToInd(  'Ca2') ) )  /    &
+!                  ( CaMoleculeWeight * 1000.0 ) ! mg/l to M
+      Y(10) = conc( SpeciesNameToInd( 'N2'),  xloc, yloc, zloc ) ! +       &
+!                   npars%backgroundConc( SpeciesNameToInd( 'N2') )
+      Y(11) =  conc( SpeciesNameToInd( 'OH'),  xloc, yloc, zloc ) 
+!      Y(11) = ( conc( SpeciesNameToInd( 'OH'),  xloc, yloc, zloc ) +     &
+!                  npars%backgroundConc( SpeciesNameToInd( 'OH') ) ) /    &
+!                  ( OHMoleculeWeight * 1000.0 ) ! mg/l to M
       Y(12) = NitrifierConc( xloc, yloc, zloc )      ! X1
       Y(13) = DenitrifierConc( xloc, yloc, zloc )    ! X2
 

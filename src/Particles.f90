@@ -31,7 +31,7 @@ MODULE Particles
 !   INTEGER*4, DIMENSION(:), ALLOCATABLE :: tmpirp
 !   INTEGER, DIMENSION(:), ALLOCATABLE :: partNumber
    INTEGER*4, DIMENSION(:), ALLOCATABLE :: removed
-   INTEGER totalremoved
+   INTEGER totalremoved, total_part_dens(13)
    REAL*8, DIMENSION(TotalNumberOfSpecies) :: maxParticleMass
 
    CONTAINS
@@ -255,9 +255,11 @@ MODULE Particles
 
      SUBROUTINE geochemicalReactions( pp, ip, np, npmax, delv,  &
             ns, nx, ny, nz, conc, conc_before_average, dt_day,  &
-                              porosity, sat, modelname  )
+                    porosity, sat, modelname, use_pf_mask, mask, &
+                   total_part_dens  )
        REAL*8, DIMENSION(:,:) :: pp, lastprint
        REAL*8, DIMENSION(:,:,:) :: porosity, sat
+       REAL*8 :: mask(:,:,:)
        INTEGER, DIMENSION(:,:) :: ipwell
        INTEGER*4,  DIMENSION(:,:) :: ip, iprp
        INTEGER*4,  DIMENSION(:) ::  irp
@@ -267,10 +269,10 @@ MODULE Particles
        REAL, DIMENSION(13) :: rates
        REAL*4 :: rate, minmass,maxmass, mass, backgroundmass, particlemass
        REAL*8 :: dt_day
-       INTEGER*4 ::  npmax, np
+       INTEGER*4 ::  npmax, np, use_pf_mask
        CHARACTER*20 substratename, modelname
-       LOGICAL :: found, recycle
-       REAL*4 :: bconc
+       LOGICAL :: found, recycle, iswithinmask
+       INTEGER*4 :: total_part_dens( 13 )
 
        IF ( modelname == 'Chen1992' ) THEN
                ns_moving = Chen1992TotalNumberOfSpecies - 2
@@ -289,13 +291,19 @@ MODULE Particles
                stop
        ENDIF
 
-
-    DO i = 3, nx - 2
-      DO j = 3, ny - 2
-        DO k = 3, nz - 2
+    DO i = 1, nx
+      DO j = 1, ny 
+        DO k = 1, nz
         
+          iswithinmask = .true.
+          IF ( use_pf_mask == 1 ) THEN
+             IF( ABS( mask( i, j, k ) ) .LT. 0.0000001 ) THEN
+               iswithinmask = .false.
+             ENDIF
+          END IF
 !          IF ( SUM( number_of_parts(1:ns_moving,i,j,k) ) .GT. 0 ) THEN 
-          IF ( number_of_parts(1,i,j,k) .GT. 0 ) THEN 
+          IF ( iswithinmask .AND. ( number_of_parts(1,i,j,k) .GT. 0 .OR.   &
+               number_of_parts(2,i,j,k) .GT. 0 ) ) THEN 
             IF ( modelname == 'Chen1992' ) THEN
               CALL Chen1992ReactRateAtCell( conc, i, j, k, REAL(dt_day), rates )
             ELSE IF( modelname == 'MacQ1990' ) THEN
@@ -393,18 +401,20 @@ MODULE Particles
               ENDIF
              ENDIF
 
-             ! update concentrations
-             conc( l, i, j, k)  = conc(l, i, j, k ) +     &
-                   mass / ( delv(1) * delv(2) * delv(3) * 1000.0           &
-                        * sat( i,j , k)  * porosity( i,j,k) )
-
 
               !call particle adjustment
 !          CALL addRemoveParticlesForCell( pp, ip, mass,                 &
 !                              np, npmax, delv,  l, i, j, k, &
 !                              porosity, sat, modelname  )
-     CALL adjustParticleMassForNewCellConc( modelname, mass,  &
-                            delv, sat, porosity, np, npmax, pp,ip, l, i, j, k )
+     CALL adjustParticleMassForNewCellConc( modelname, mass, &
+              delv, sat, porosity, np, npmax, pp,ip, l, i, j, k, &
+              total_part_dens )
+
+             ! update concentrations
+             conc( l, i, j, k)  = conc(l, i, j, k ) +     &
+                   mass / ( delv(1) * delv(2) * delv(3) * 1000.0           &
+                        * sat( i,j , k)  * porosity( i,j,k) )
+
 
            END DO
         ENDIF !IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
@@ -483,15 +493,15 @@ MODULE Particles
        REAL*4 :: bconc
 
               IF ( modelname == 'Chen1992' ) THEN
-               bconc = cpars%backgroundConc(l)
+               bconc = cpars%backgroundConc(l,i,j,k )
               ELSE IF( modelname == 'MacQ1990' ) THEN
-               bconc = mpars%backgroundConc(l )
+               bconc = mpars%backgroundConc(l,i,j,k )
               ELSE IF( modelname == 'MacQ1990unsat' ) THEN
-               bconc = umpars%backgroundConc(l )
+               bconc = umpars%backgroundConc(l,i,j,k )
               ELSE IF( modelname == 'MacQ' ) THEN
-               bconc = npars%backgroundConc(l )
+               bconc = npars%backgroundConc(l,i,j,k )
               ELSE IF( modelname == 'VG' ) THEN
-               bconc = vgpars%backgroundConc(l)
+               bconc = vgpars%backgroundConc(l,i,j,k)
               ELSE IF( modelname == 'noreact' ) THEN
                       bconc = 0.0
               ELSE 
@@ -813,7 +823,8 @@ MODULE Particles
      END SUBROUTINE addRemoveParticlesForCell
 
      SUBROUTINE adjustParticleMassForNewCellConc( modelname, cellMassChange,  &
-                             delv, sat, porosity, np, npmax, pp,ip, l, i, j, k )
+                       delv, sat, porosity, np, npmax, pp,ip, l, i, j, k,     &
+                      total_part_dens )
        REAL*8, DIMENSION(:,:) :: pp
        INTEGER*4,  DIMENSION(:,:) :: ip
        INTEGER ::  i, j, k, l, part, m, n
@@ -823,17 +834,18 @@ MODULE Particles
        CHARACTER*20 modelname
        REAL*4 :: bconc
        REAL*8, DIMENSION(:,:,:) :: porosity, sat
+       INTEGER*4 :: total_part_dens(13)
 
        IF ( modelname == 'Chen1992' ) THEN
-               bconc = cpars%backgroundConc(l)
+               bconc = cpars%backgroundConc(l,i,j,k)
        ELSE IF( modelname == 'MacQ1990' ) THEN
-               bconc = mpars%backgroundConc(l )
+               bconc = mpars%backgroundConc(l,i,j,k )
        ELSE IF( modelname == 'MacQ1990unsat' ) THEN
-               bconc = umpars%backgroundConc(l )
+               bconc = umpars%backgroundConc(l,i,j,k )
        ELSE IF( modelname == 'MacQ' ) THEN
-               bconc = npars%backgroundConc(l )
+               bconc = npars%backgroundConc(l,i,j,k )
        ELSE IF( modelname == 'VG' ) THEN
-               bconc = vgpars%backgroundConc(l)
+               bconc = vgpars%backgroundConc(l,i,j,k)
        ELSE IF( modelname == 'noreact' ) THEN
                       bconc = 0.0
        ELSE 
@@ -856,8 +868,10 @@ MODULE Particles
             pp( part, 4 ) = pp( part, 4 ) + partMassChange
            ENDDO 
        ELSE
-           partMassChange = cellMassChange / 10
-           DO m = 1, 10
+!           partMassChange = cellMassChange / total_part_dens( l )
+!           DO m = 1, total_part_dens( l )
+          partMassChange = cellMassChange / 10
+          DO m = 1, 10
                  IF ( totalremoved .GT. 0 ) THEN
                       idx = removed( totalremoved )
                       totalremoved = totalremoved - 1
@@ -882,9 +896,9 @@ MODULE Particles
                    STOP
                  ENDIF
            ENDDO 
-        WRITE(*,*)'Warning! -------' 
-        WRITE(*,*)'   particle number is 0 for species number ', l , &
-           ' at i = ', i, ' j = ', j, ' k = ', k
+!        WRITE(*,*)'Warning! -------' 
+!        WRITE(*,*)'   particle number is 0 for species number ', l , &
+!           ' at i = ', i, ' j = ', j, ' k = ', k
        ENDIF
 
      END SUBROUTINE adjustParticleMassForNewCellConc
@@ -1901,15 +1915,15 @@ MODULE Particles
              DO k = 1, nz
                cnt = 0
                IF ( modelname == 'Chen1992' ) THEN
-                 bconc =cpars%backgroundConc(l)
+                 bconc =cpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'MacQ1990' ) THEN
-                 bconc =mpars%backgroundConc(l)
+                 bconc =mpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'MacQ1990unsat' ) THEN
-                 bconc =umpars%backgroundConc(l)
+                 bconc =umpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'MacQ' ) THEN
-                 bconc =npars%backgroundConc(l)
+                 bconc =npars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'VG' ) THEN
-                 bconc =vgpars%backgroundConc(l)
+                 bconc =vgpars%backgroundConc(l,i,j,k)
                ELSE 
                   WRITE(*,*) 'ERROR: non-known model name: ', modelname
                   stop
@@ -2024,15 +2038,15 @@ MODULE Particles
            DO k = 1, nz
              DO l = 1, ns_moving
                IF ( modelname == 'Chen1992' ) THEN
-                  bconc =cpars%backgroundConc(l)
+                  bconc =cpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'MacQ1990' ) THEN
-                  bconc =mpars%backgroundConc(l)
+                  bconc =mpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'MacQ1990unsat' ) THEN
-                  bconc =umpars%backgroundConc(l)
+                  bconc =umpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'MacQ' ) THEN
-                  bconc =npars%backgroundConc(l)
+                  bconc =npars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'VG' ) THEN
-                  bconc =vgpars%backgroundConc(l)
+                  bconc =vgpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'noreact' ) THEN
                ELSE 
                   WRITE(*,*) 'ERROR: non-known model name: ', modelname
@@ -2092,15 +2106,15 @@ MODULE Particles
            DO k = 1, nz
              DO l = 1, ns_moving
                IF ( modelname == 'Chen1992' ) THEN
-                  bconc =cpars%backgroundConc(l)
+                  bconc =cpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'MacQ1990' ) THEN
-                  bconc =mpars%backgroundConc(l)
+                  bconc =mpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'MacQ1990unsat' ) THEN
-                  bconc =umpars%backgroundConc(l)
+                  bconc =umpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'MacQ' ) THEN
-                  bconc =npars%backgroundConc(l)
+                  bconc =npars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'VG' ) THEN
-                  bconc =vgpars%backgroundConc(l)
+                  bconc =vgpars%backgroundConc(l,i,j,k)
                ELSE IF( modelname == 'noreact' ) THEN
                ELSE 
                   WRITE(*,*) 'ERROR: non-known model name: ', modelname

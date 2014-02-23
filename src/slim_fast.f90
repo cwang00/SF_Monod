@@ -10,7 +10,8 @@ SUBROUTINE slimfast(xtent,ytent,ztent,delv,al,at, &
     concprint,wellprint,momprint,confile, tnext,nt,partprint,vlocfile,         &
     partfile,nw,well,welltnext,moldiff,welltnumb, rtard,porosity,n_constituents, &
  half_life,k_att,k_det,iv_type, press,headfile,head_list_file,time_file, kxfile,kyfile,  &
- kzfile,vgafile,vgnfile,sresfile,npmax,give_up,epsi,vmult,vtk_file, saturated, &
+ kzfile,vgafile,vgnfile,sresfile,npmax,give_up,epsi,vmult,vtk_file,  &
+ write_vel_field, vel_field_file, saturated, &
  vga_const, vgn_const, sres_sat_const, modelname, bndcnd)
 ! Slim-Fast Main Routine
 ! written by Reed M. Maxwell
@@ -127,24 +128,24 @@ INTEGER*4                :: concprint, velprint
 INTEGER*4                :: wellprint
 INTEGER*4                :: momprint
 !CHARACTER (LEN=20)       :: confile(n_constituents)
-CHARACTER (LEN=20)       :: confile(:)
+CHARACTER (LEN=500)       :: confile(:)
 !REAL*8                   :: half_life(n_constituents)
 REAL*8                   :: half_life(:)
 REAL*8                   :: tnext
 INTEGER*4                :: nt
 INTEGER*4                :: partprint
-CHARACTER (LEN=100)      :: vlocfile
-CHARACTER (LEN=100)      :: kxfile
-CHARACTER (LEN=100)      :: kyfile
-CHARACTER (LEN=100)      :: kzfile
-CHARACTER (LEN=100)      :: vgafile
-CHARACTER (LEN=100)      :: vgnfile
-CHARACTER (LEN=100)      :: sresfile
+CHARACTER (LEN=500)      :: vlocfile
+CHARACTER (LEN=500)      :: kxfile
+CHARACTER (LEN=500)      :: kyfile
+CHARACTER (LEN=500)      :: kzfile
+CHARACTER (LEN=500)      :: vgafile
+CHARACTER (LEN=500)      :: vgnfile
+CHARACTER (LEN=500)      :: sresfile
 INTEGER*4                :: press
-CHARACTER (LEN=100)      :: headfile
-CHARACTER (LEN=100)      :: head_list_file
-CHARACTER (LEN=100)      :: time_file
-CHARACTER (LEN=100)      :: partfile
+CHARACTER (LEN=500)      :: headfile
+CHARACTER (LEN=500)      :: head_list_file
+CHARACTER (LEN=500)      :: time_file
+CHARACTER (LEN=500)      :: partfile
 INTEGER*4                :: nw
 REAL*8                   :: well(20,10)
 REAL*8                   :: welltnext
@@ -158,12 +159,14 @@ REAL*8                   :: porosity(:,:,:)
 REAL*8                   :: k_att(:,:,:,:)
 !REAL*8                   :: k_det(n_constituents,xtent,ytent,ztent)
 REAL*8                   :: k_det(:,:,:,:)
-INTEGER*4                :: iv_type
+INTEGER*4                :: iv_type, write_vel_field
 INTEGER*4                :: npmax
 INTEGER*4                :: give_up
 real*8                   :: epsi
 real*8                   :: vmult 
-CHARACTER (LEN=100)      :: vtk_file
+CHARACTER (LEN=500)      :: vtk_file, vel_field_file
+CHARACTER (LEN=500)      :: sat_file
+CHARACTER (LEN=500)      :: pf_mask_file
 INTEGER 		 :: saturated
 
 INTEGER, PARAMETER       ::  massive_debug = 0, part_conc_write = 0, recycle_well = 0
@@ -199,7 +202,7 @@ REAL*4,allocatable::c(:,:,:,:), oldC(:,:,:,:)
 REAL*4 cps, cmin
 
 REAL*8,allocatable::v(:,:,:,:),mass(:,:), P(:,:),sat(:,:,:),scxyz(:,:),lastprint(:,:), ic_mass_or_conc(:, :, :), ic_time_begin(:,:), ic_time_end(:,:)
-REAL*8,allocatable::hkx(:,:,:), hky(:,:,:),hkz(:,:,:),vga(:,:,:),vgn(:,:,:),sres(:,:,:)
+REAL*8,allocatable::hkx(:,:,:), hky(:,:,:),hkz(:,:,:),vga(:,:,:),vgn(:,:,:),sres(:,:,:), pf_mask(:,:,:)
 INTEGER*4,allocatable::ic_cat_num(:,:,:,:),iP(:,:),irP(:),iprP(:,:), &
                        ic_cat_num_bg(:, :, :, :)
 
@@ -224,12 +227,15 @@ REAL*8 :: vga_const, vgn_const, sres_sat_const, bnd_Xup, bnd_Xdown,    &
                                                 bnd_Yup, bnd_Ydown,    &
                                                 bnd_Zup, bnd_Zdown
 REAL*8 :: oldloc(3), origloc(3)
-INTEGER*4 :: Xup_Ref, Xdown_Ref, Yup_Ref, Ydown_Ref, Zup_Ref, Zdown_Ref
+INTEGER*4 :: Xup_Ref, Xdown_Ref, Yup_Ref, Ydown_Ref, Zup_Ref, Zdown_Ref,    &
+            use_pf_mask
 CHARACTER (LEN=20) :: modelname, bndcnd
+LOGICAL iswithintwocellsfrombdy
+
 interface
 
-subroutine v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,phi,delv,nx,ny,nz,press,sat)
-real*8  :: v(:,:,:,:),hkx(:,:,:), hky(:,:,:),hkz(:,:,:),vga(:,:,:),vgn(:,:,:),sres(:,:,:)
+subroutine v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,phi,delv,nx,ny,nz,press,sat, mask)
+real*8  :: v(:,:,:,:),hkx(:,:,:), hky(:,:,:),hkz(:,:,:),vga(:,:,:),vgn(:,:,:),sres(:,:,:), mask(:,:,:)
 character(100) :: headfile
 real*8  :: phi(:,:,:)
 real*8  :: sat(:,:,:)
@@ -240,8 +246,9 @@ integer*4 :: nz
 integer*4 :: press
 end subroutine v_calc
 
-subroutine v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,phi,delv,nx,ny,nz,press,sat) 
-real*8  :: v(:,:,:,:),hkx(:,:,:), hky(:,:,:),hkz(:,:,:),vga(:,:,:),vgn(:,:,:)
+subroutine v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,phi,delv,nx,ny,nz,press,sat,mask) 
+real*8  :: v(:,:,:,:),hkx(:,:,:), hky(:,:,:),hkz(:,:,:),vga(:,:,:),vgn(:,:,:), &
+           mask(:,:,:)
 character(100) :: headfile
 real*8  :: phi(:,:,:)
 real*8  :: sat(:,:,:)
@@ -290,9 +297,8 @@ INTEGER*4              :: n_constituents
 CHARACTER (LEN=100)      :: vtk_file
 end subroutine vtk_write
 
-SUBROUTINE gnuplot_write(x,ixlim,iylim,izlim,icycle,n_constituents,bg, vtk_file)
+SUBROUTINE gnuplot_write(x,ixlim,iylim,izlim,icycle,n_constituents, vtk_file)
 REAL*4    :: x(:,:,:,:)
-REAL, DIMENSION(:) :: bg
 INTEGER*4 :: ixlim
 INTEGER*4 :: iylim
 INTEGER*4 :: izlim
@@ -301,9 +307,45 @@ INTEGER*4              :: n_constituents
 CHARACTER (LEN=100)      :: vtk_file
 end subroutine gnuplot_write
 
+SUBROUTINE write_vel_gnuplot(v,ixlim,iylim,izlim, dx, dy, dz, vel_file)
+REAL*8    :: v(:,:,:,:)
+INTEGER*4 :: ixlim
+INTEGER*4 :: iylim
+INTEGER*4 :: izlim
+REAL*8                 :: dx
+REAL*8                 :: dy
+REAL*8                 :: dz
+CHARACTER (LEN=500)      :: vel_file
+END SUBROUTINE write_vel_gnuplot
+
+SUBROUTINE write_vel_gnuplot_2d(v,ixlim,iylim,izlim, dx, dy, dz,y, odx, odz, vel_file)
+REAL*8    :: v(:,:,:,:)
+INTEGER*4 :: ixlim
+INTEGER*4 :: iylim
+INTEGER*4 :: izlim
+INTEGER*4 :: y, odx, odz
+REAL*8                 :: dx
+REAL*8                 :: dy
+REAL*8                 :: dz
+CHARACTER (LEN=500)      :: vel_file
+END SUBROUTINE write_vel_gnuplot_2d
+
+SUBROUTINE write_sat_gnuplot_2d(sat,ixlim,iylim,izlim, dx, dy, dz, y)
+REAL*8    :: sat(:,:,:)
+INTEGER*4 :: ixlim
+INTEGER*4 :: iylim
+INTEGER*4 :: izlim
+INTEGER*4 :: y
+REAL*8                 :: dx
+REAL*8                 :: dy
+REAL*8                 :: dz
+
+END SUBROUTINE write_sat_gnuplot_2d
+
+
     SUBROUTINE pf_read(x,filename,nx,ny,nz,dx2,dy2,dz2)
     real*8  :: x(:,:,:)
-    character*100 :: filename
+    character*500 :: filename
     integer*4 :: nx
     integer*4 :: ny
     integer*4 :: nz
@@ -582,6 +624,16 @@ DO  i=1,nw
   WRITE(666,'(i5,": Q= ",e12.4)') i,well(i,5)
 END DO
 
+! read in mask
+READ(99,*) use_pf_mask
+READ(99,*) pf_mask_file
+
+if ( use_pf_mask == 1 ) then
+  allocate( pf_mask(xtent,ytent,ztent) )
+  call pf_read(pf_mask(:,:,:),pf_mask_file,     &
+              xtent,ytent,ztent,delv(1),delv(2),delv(3))
+end if
+
 ! read in plane info
 
 WRITE(666,*)
@@ -601,6 +653,7 @@ DO i = 1,nplane
 	,xplaneloc(i)
   
 END DO
+
 
 if (iv_type == 1) then
         if( saturated == 3 ) then
@@ -652,9 +705,9 @@ hky = hky + 1E-15
 hkz = hkz + 1E-15
 
 if ( saturated .ne. 3 ) then
-   call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+   call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat, pf_mask)
 else
-   call v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+   call v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,porosity,delv,xtent,ytent,ztent,press,sat,pf_mask)
 endif
 
 end if ! calc'd vel ?
@@ -699,9 +752,9 @@ hkx = hkx + 1E-15
 hky = hky + 1E-15
 hkz = hkz + 1E-15
 if ( saturated .ne. 3 ) then
-   call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+   call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat, pf_mask)
 else
-   call v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+   call v_calc_const_sat(v,hkx,hky,hkz,vga,vgn,headfile,porosity,delv,xtent,ytent,ztent,press,sat,pf_mask)
 endif
 end if ! calc'd vel ?
 
@@ -871,7 +924,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 !end do !i
 !end do !j
 !end do !k
-  total_part_dens(iic) = icnpart / pulse_vol / ( delv(1) * delv(2) * delv(3)  )
+  total_part_dens(iic) = icnpart / ( pulse_vol / ( delv(1) * delv(2) * delv(3) ) )
 
  END IF
 
@@ -1286,7 +1339,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 
  END IF ! ic = 6
 
-  IF ( total_part_dens( iic ) .LE. 0 ) total_part_dens(iic) = 100
+  IF ( total_part_dens( iic ) .LE. 0 ) total_part_dens(iic) = 10
  END DO  ! DO iiC = 1, n_constituents
 
 np = n-1
@@ -1362,6 +1415,12 @@ IF (concprint == 1) THEN
   CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),0,n_constituents,vtk_file)
   
 END IF    ! print concentrations?
+
+IF(partprint >= 1) THEN
+     DO  n = 1, np
+       write(113,61) P(n,1), P(n,2), P(n,3), n, P(n,7)
+     END DO
+ENDIF
  
 ! set time column of mass to zero for initi condition
 
@@ -1373,7 +1432,7 @@ DO  n = 1, np
   ryy = ryy + p(n,2)
   rzz = rzz + p(n,3)
   
-  61  FORMAT(4(e15.8,','),e15.6)
+  61  FORMAT(3(F15.6,','),I10, ',', F15.6)
   62  FORMAT(3(f6.1,','),3(f9.4,','),f9.4)
 END DO
 rxx = rxx/np
@@ -1430,6 +1489,23 @@ end do
 
 end if
 
+if (write_vel_field == 1 ) then
+  ! output velocity field in gnuplot format
+!  CALL write_vel_gnuplot_2d( v, xtent, ytent,ztent, delv(1),delv(2),delv(3), &
+!                    5, 5, 2, vel_field_file )
+!  CALL write_vel_gnuplot_2d( v, xtent, ytent,ztent, delv(1),delv(2),delv(3), &
+!                    5, 1, 1, 'high_res_'//vel_field_file )
+  CALL write_vel_gnuplot(v,xtent,ytent,ztent, delv(1), delv(2), delv(3),   &
+                    '3D_'//vel_field_file )
+!  CALL write_sat_gnuplot_2d(sat,xtent, ytent, ztent, delv(1),delv(2),delv(3),&
+!                   5 )
+endif
+
+!
+!reverse velocities if needed
+! 
+  V = V*vmult 
+
 CALL allocateParticles_Memory(xtent, ytent, ztent, n_constituents, &
                   npmax, total_part_dens )
 
@@ -1450,6 +1526,10 @@ DO  it = 1, nt
 if (iv_type == 1) then
   CALL compact_vread(v,domax(1),domax(2),domax(3),  &
       timenext)
+!
+!reverse velocities if needed
+! 
+  V = V*vmult 
   
 ! convert seconds to days
   t_prev = tnext
@@ -1467,7 +1547,11 @@ t_prev = tnext
 read(16,*) tnext
 if (it > 1) then
 read(17,'(a100)') headfile
-call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat)
+call v_calc(v,hkx,hky,hkz,vga,vgn,sres,headfile,porosity,delv,xtent,ytent,ztent,press,sat,pf_mask)
+!
+!reverse velocities if needed
+! 
+  V = V*vmult 
 end if ! first timestep?
 end if ! calc'd vel ?
 
@@ -1531,10 +1615,7 @@ WRITE(666,*)
   
  ! print*, C(1,1,1,1)
 
-!
-!reverse velocities if needed
-! 
- V = V*vmult 
+
 ! mp = np
 !
 ! Big Particle loop.  This guy is where all the particles get moved.
@@ -1556,7 +1637,7 @@ origloc( 3 ) = p(n,3)
       end do
       pdist = dsqrt(pdist)
       if (pdist >= minpdist) then
-      !WRITE(13,61) p(n,1), p(n,2), p(n,3), p(n,5), p(n,7)
+      !WRITE(113,61) p(n,1), p(n,2), p(n,3), p(n,5), p(n,7)
       lastprint(n,1) = p(n,1)
       lastprint(n,2) = p(n,2)
       lastprint(n,3) = p(n,3)
@@ -1693,6 +1774,18 @@ origloc( 3 ) = p(n,3)
 
      END DO
 
+! and for inactive cells
+
+!  remove particles in the inactive cells
+    IF( use_pf_mask == 1 ) THEN
+      IF ( pf_mask( ploc(1), ploc(2), ploc(3) ) .LT. 0.000000001 ) THEN
+         p(n, 1:3) = -999.0
+         done = 1
+         GO TO 151
+      END IF
+    END IF
+
+
 ! and in time
  
      IF (P(n,7) > tnext) THEN
@@ -1703,6 +1796,7 @@ origloc( 3 ) = p(n,3)
 		  end if
           GO TO 151
      END IF
+
  !!
  !@RMM Remove/comment below 
  !!
@@ -2227,11 +2321,34 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
           print*, ' vyk+1',v(l,ploc(1)+po(l,1),ploc(2)+po(l,2),ploc(3)+po(l,3))
 		  end if
 
-        
+        iswithintwocellsfrombdy = .true.
+        IF ( use_pf_mask == 1 ) THEN
+
+         IF ( ( ploc(3) + 1 ) .LE. domax(3) ) THEN
+             IF ( ABS( pf_mask( ploc(1), ploc(2), ploc(3) ) ) .GT. 0.0000001 &
+                 .AND. ABS( pf_mask( ploc(1), ploc(2), ploc(3)+ 1) ) .GT. &
+                  0.0000001 ) THEN
+                  iswithintwocellsfrombdy = .true.
+             ELSE
+                  iswithintwocellsfrombdy = .false.
+             ENDIF    
+         ENDIF
+
+         IF ( ( ploc(3) + 2 ) .LE. domax(3) ) THEN
+             IF ( ABS( pf_mask( ploc(1), ploc(2), ploc(3) ) ) .GT. 0.0000001 &
+                 .AND. ABS( pf_mask( ploc(1), ploc(2), ploc(3)+ 2) ) .GT. &
+                  0.0000001 ) THEN
+                  iswithintwocellsfrombdy = .true.
+             ELSE
+                  iswithintwocellsfrombdy = .false.
+             ENDIF    
+         ENDIF
+
+       ENDIF ! IF use_pf_mask
         !IF (((al > 0).OR.(at > 0)).AND.(iP(n,4) == 0)) THEN
 ! hack to turn of RW if we are close to z=0 bddy
 !        IF (((ploc(3)<=2).or.(al > 0).OR.(at > 0)).AND.(iP(n,4) == 0)) THEN
-                IF ( ( ploc(3) > 2 .and. ploc(3) < domax(3) - 1 ) .and. ((al > 0).OR.(at > 0)).AND.(iP(n,4) == 0)) THEN
+                IF ( iswithintwocellsfrombdy .and. ( ploc(3) > 2 .and. ploc(3) < domax(3) - 1 ) .and. ((al > 0).OR.(at > 0)).AND.(iP(n,4) == 0)) THEN
  
 !
 ! Okay, time to do random walk dispersion and correction term
@@ -2591,7 +2708,7 @@ end if
 !
 ! Move them darn particles
 !
-        oldloc(1) = p( n, 1 )
+        oldloc(1) = p( n, 1 ) 
         oldloc(2) = p( n, 2 )
         oldloc(3) = p( n, 3 )
         DO  l = 1, numax
@@ -2742,6 +2859,16 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 !        p(n,1) =0.3 - ( p(n, 3) - 0.3 )
 !       ENDIF 
 
+!    IF( use_pf_mask == 1 ) THEN
+!      IF ( pf_mask( IDINT( ploc(1)/delv(1)) + 1,                    &
+!                    IDINT( ploc(2)/delv(2)) + 1,                    &
+!                    IDINT( ploc(3)/delv(3)) + 1 ) .LT. 0.000000001 ) THEN
+!         p(n, 1) = oldloc(1)
+!         p(n, 2) = oldloc(2)
+!         p(n, 3) = oldloc(3)
+!      END IF
+!    END IF
+
        IF ( Zup_Ref .EQ. 1 ) THEN
          IF( p(n, 3) >  bnd_Zup ) p(n,3) = bnd_Zup - ( p(n,3) - bnd_Zup ) 
        ENDIF
@@ -2761,7 +2888,12 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
          IF( p(n, 1) <  bnd_Xdown ) p(n,1) = bnd_Xdown - ( p(n,1) - bnd_Xdown ) 
        ENDIF
        
-      
+!   if ( oldloc(1) < 100.2 .AND. ( p(n, 1) > 100.2 .AND. p(n, 3) > 11.6 ) ) then
+!       write(667, *) "WARN: crossed channel: oldloc = " , oldloc(1), oldloc(3) 
+!       write(667, *) "WARN: crossed channel: newloc = " , p(n, 1), p(n, 3) 
+!       p(n, 1:3) = -999.0
+!   endif
+
 ! Now we add decay/ingrowth
 !
 
@@ -2876,6 +3008,13 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
               inbounds = 0
             END IF
           END DO
+
+          IF ( use_pf_mask == 1 .AND. inbounds == 1 ) THEN
+             IF( ABS( pf_mask( ploc(1), ploc(2), ploc(3) ) ) &
+                       .LT. 0.0000001) THEN
+                       inbounds = 0 
+               END IF
+          END IF
           
           IF (inbounds == 1) THEN
 ! we are adding a fix for unsat retardation
@@ -2963,6 +3102,13 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
               inbounds = 0
             END IF
           END DO
+
+          IF ( use_pf_mask == 1 .AND. inbounds == 1) THEN
+             IF( ABS( pf_mask( ploc(1), ploc(2), ploc(3) ) ) &
+                       .LT. 0.0000001) THEN
+                       inbounds = 0 
+               END IF
+          END IF
           
           IF (inbounds == 1) THEN
 ! we are adding a fix for unsat retardation
@@ -2982,6 +3128,13 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
           END DO
 
 		  if(P(n,7) > tnext) inbounds = 0
+
+          IF ( use_pf_mask == 1 .AND. inbounds == 1) THEN
+             IF( ABS( pf_mask( ploc(1), ploc(2), ploc(3) ) ) &
+                       .LT. 0.0000001) THEN
+                       inbounds = 0 
+               END IF
+          END IF
           
           IF (inbounds == 1) THEN
 ! we are adding a fix for unsat retardation
@@ -3003,7 +3156,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
                        end do
                        pdist = dsqrt(pdist)
                        if (pdist >= minpdist) then
-                       !WRITE(13,61) p(n,1), p(n,2), p(n,3), p(n,5), p(n,7)
+                       !WRITE(113,61) p(n,1), p(n,2), p(n,3), p(n,5), p(n,7)
                        lastprint(n,1) = p(n,1)
                        lastprint(n,2) = p(n,2)
                        lastprint(n,3) = p(n,3)
@@ -3072,7 +3225,8 @@ END DO ! the big particle loop:  DO  n = 1, np
   Oldc = C
  CALL geochemicalReactions( p, ip, np, npmax, delv,  n_constituents, &
                            xtent, ytent, ztent, OldC, c, ( tnext - t_prev ), &
-                           porosity, sat, modelname )
+                           porosity, sat, modelname, use_pf_mask, pf_mask,  &
+                          total_part_dens )
  C = OldC 
 !  np = mp
 !  CALL updateConc( c, p, ip, np, delc, domax, sat, porosity, Rtard, tnext )
@@ -3127,7 +3281,7 @@ end if ! part_conc_write
               WRITE (dotit,199) it
 
   !CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),it,n_constituents,vtk_file)
-  CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,npars%backgroundConc,vtk_file)
+  CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,vtk_file)
       
     END IF   !print concentration
 
@@ -3148,7 +3302,9 @@ end if ! part_conc_write
     
     
     DO  n = 1, np
-!C     write(13,61) P(n,1), P(n,2), P(n,3), P(n,5), P(n,7)
+     IF(partprint >= 1) THEN
+       write(113,61) P(n,1), P(n,2), P(n,3), n, P(n,7)
+     ENDIF
 !   mass(iP(n,1)+1,it+1) = mass(iP(n,1)+1,it+1) + P(n,4)
 
       IF (p(n,1) > bdyx1) THEN
@@ -3236,6 +3392,12 @@ end if ! part_conc_write
           END IF ! in bounds?
         END DO ! in bounds?
 
+          IF ( use_pf_mask == 1 .AND. inbounds == 1 ) THEN
+             IF( ABS( pf_mask( ploc(1), ploc(2), ploc(3) ) ) &
+                       .LT. 0.0000001) THEN
+                       inbounds = 0 
+               END IF
+          END IF
 !
 ! if we're in bounds, check for single particles
 !
@@ -3366,6 +3528,7 @@ end if
   CLOSE(33)
   close (16)
   close(17)
+  close(113)
   
   RETURN
 END SUBROUTINE slimfast

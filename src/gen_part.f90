@@ -35,8 +35,16 @@ ir = 21
           DO iii = 1, n_ic_cats
            IF( ic_part_dens( iii ) .GT. 0 ) THEN
             IF( timestep_num == 1 ) THEN
-               mass = ic_conc( 1, iii ) * delv( 1 ) * delv( 2 ) * delv( 3 ) &
+               IF ( bnd_cnd == 'const_conc' ) THEN
+                 mass = ( ic_conc( timestep_num, iii ) -            &
+                   current_conc(constitute_num, ii, jj,kk ) ) &
+                     * delv( 1 ) * delv( 2 ) * delv( 3 )      &
                          * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) 
+               ELSE           
+                  mass = ic_conc( 1, iii ) * delv( 1 ) * delv( 2 ) * delv( 3 ) &
+                         * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) 
+               ENDIF           
+               IF ( mass .LT. 0.0 ) mass = 0.0
             ELSE
               IF ( bnd_cnd == 'const_flux' ) THEN
                mass = ic_conc( timestep_num, iii ) * delv( 2 ) * delv( 3 ) &
@@ -49,7 +57,7 @@ ir = 21
                        * ABS( vel(3, ii,jj,kk) ) * (time_end - time_begin ) &
                          * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) 
                ELSE IF ( bnd_cnd == 'const_conc' ) THEN
-                 mass = ( ic_conc( 1, iii ) -            &
+                 mass = ( ic_conc( timestep_num, iii ) -            &
                    current_conc(constitute_num, ii, jj,kk ) ) &
                      * delv( 1 ) * delv( 2 ) * delv( 3 )      &
                          * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) 

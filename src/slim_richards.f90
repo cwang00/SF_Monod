@@ -86,7 +86,7 @@ INTEGER*4   backsl, i,       &
     xtent,ytent,ztent,       &
 	n_constituents, ii, jj,  &
 	ircheck, iv_type,phi_type, &
-	npmax, give_up, press
+	npmax, give_up, press, write_vel_field
 INTEGER saturated
 
 REAL*8,allocatable::phi(:,:,:),r(:,:,:,:),rtemp(:),half_life(:),		&
@@ -94,29 +94,29 @@ REAL*8,allocatable::phi(:,:,:),r(:,:,:,:),rtemp(:),half_life(:),		&
     R_temp(:,:,:)
 
 
-CHARACTER (LEN=100) ::  runname, slimfile, logfile,      &
+CHARACTER (LEN=500) ::  runname, slimfile, logfile,      &
     partfile,  momfile, wellover, kxfile,kyfile,kzfile,  &
 	headfile, phifile,head_list_file, time_file,   &
-    vgafile, vgnfile, sresfile, vtk_file
+    vgafile, vgnfile, sresfile, vtk_file, vel_field_file
 
 CHARACTER (LEN=20) :: modelname, bndcnd
 
-CHARACTER(LEN=100),allocatable :: wellbtcfile(:)
-CHARACTER(LEN=20),allocatable :: concfile(:)
-CHARACTER(LEN=100),allocatable :: min_file(:)
-CHARACTER(LEN=100),allocatable :: kd_file(:)
-CHARACTER(LEN=100),allocatable :: R_file(:)
-CHARACTER(LEN=100),allocatable :: mat_file(:)
-CHARACTER(LEN=100),allocatable :: perm_cat_file(:)
+CHARACTER(LEN=500),allocatable :: wellbtcfile(:)
+CHARACTER(LEN=500),allocatable :: concfile(:)
+CHARACTER(LEN=500),allocatable :: min_file(:)
+CHARACTER(LEN=500),allocatable :: kd_file(:)
+CHARACTER(LEN=500),allocatable :: R_file(:)
+CHARACTER(LEN=500),allocatable :: mat_file(:)
+CHARACTER(LEN=500),allocatable :: perm_cat_file(:)
 
-CHARACTER (LEN=100) :: velfile, inputfile, ninputfile
+CHARACTER (LEN=500) :: velfile, inputfile, ninputfile
 
 DIMENSION delv(3), wells(20,10)
 
 INTERFACE  
     SUBROUTINE pf_read(x,filename,nx,ny,nz,dx2,dy2,dz2)
     real*8  :: x(:,:,:)
-    character*100 :: filename
+    character*500 :: filename
     integer*4 :: nx
     integer*4 :: ny
     integer*4 :: nz
@@ -313,6 +313,8 @@ if (phi_type == 2) WRITE(666,*) 'file for phi: ',trim(phifile)
 if (phi_type == 1) WRITE(666,'("constant phi:",f8.6)') phi_const
 end if
 
+READ(99,*)     write_vel_field
+READ(99,*)     vel_field_file
 
 WRITE(666,*)
 WRITE(666,*)
@@ -652,7 +654,7 @@ CALL slimfast(xtent,ytent,ztent,delv,al,at,                            &
     partfile,nw,wells,welltnext,moldiff,welltnumb, r,phi,n_constituents, &
 	half_life,k_att,k_det,iv_type,press, headfile,head_list_file, time_file, &
 	 kxfile,kyfile,kzfile,vgafile,vgnfile,sresfile,npmax, give_up, epsi,vmult, &
-   vtk_file,saturated, vga_const, vgn_const, sres_sat_const, modelname, bndcnd)
+   vtk_file,write_vel_field, vel_field_file, saturated, vga_const, vgn_const, sres_sat_const, modelname, bndcnd)
 	
 
 print*, 'finished'

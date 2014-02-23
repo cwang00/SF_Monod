@@ -111,6 +111,21 @@ puts $fileId "2										! const phi"
 puts $fileId "\"$phi_file\"									! phi value \[-\]"
 }
 }
+
+if {[info exists write_vel_field_gnuplot ]} {
+	if { $write_vel_field_gnuplot == "yes" } {
+           puts $fileId "1                        !if write velocity field to a gnuplot file, 1 - yes, 0 - no"
+
+           puts $fileId "\"$vel_field_file\"                        !velocity field gnuplot file name"
+	} else {
+           puts $fileId "0                        !if write velocity field to a gnuplot file, 1 - yes, 0 - no"
+           puts $fileId "\"*********\"                        !velocity field gnuplot file name"
+	}
+} else {
+           puts $fileId "0                        !if write velocity field to a gnuplot file, 1 - yes, 0 - no"
+           puts $fileId "\"*********\"                        !velocity field gnuplot file name"
+}
+
 puts $fileId "$nx 						! number of x-nodes in the domain \[-\]"
 puts $fileId "$ny 						! number of y-nodes in the domain \[-\]"
 puts $fileId "$nz 						! number of z-nodes in the domain \[-\]"
@@ -231,6 +246,14 @@ puts $fileId  "const_flux                          !const flux boundary"
 
 puts $fileId "$modelname                           !select which reaction model"
 
+if {[info exists parflow_mask ]} {
+	puts $fileId "1                               ! has parFlow mask file"
+	puts $fileId "\"$parflow_mask\"                 ! ParFlow mask file"
+} else {
+puts $fileId  "0                          ! does not have parFlow mask file"
+puts $fileId "\"*********\"                ! ParFlow mask file place holder"
+}
+
 for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
 puts $fileId "\"$plane_out_file($jj)\""
 }
@@ -342,9 +365,6 @@ if {$modelname == "MacQ1990"} {
   puts $nfileId "$Y         ! biomass yield coefficient"
   puts $nfileId "$r         ! Utilizaton ratio, X"
   puts $nfileId "$decay     ! biomass decay coefficient"
-  for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
-   puts $nfileId "$slim_background_conc($jj)            ! background conc"
-  }
 } elseif { $modelname == "MacQ1990unsat" } {
   puts $nfileId "$kmax      ! maximum rate of substrate utilization"
   puts $nfileId "$Ks        ! substrate half-saturation constant"
@@ -360,9 +380,6 @@ if {$modelname == "MacQ1990"} {
   puts $nfileId "$EH        ! electron acceptor Henry's constant"
   puts $nfileId "$SD0        ! substract free air diffusion coefficient"
   puts $nfileId "$ED0        ! electorn acceptor free air diffusion coefficient"
-  for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
-   puts $nfileId "$slim_background_conc($jj)            ! background conc"
-  }
 } elseif { $modelname == "MacQ"} {
 puts $nfileId "$biomass1_concentration_mg_l ! biomass1 concentration mg/l of porous media"
 puts $nfileId "$biomass2_concentration_mg_l ! biomass2 concentration mg/l of porous media"
@@ -404,17 +421,11 @@ puts $nfileId "$k_b_3_cm_mday !CaCO3(s) = CO3 + Ca backward rate mol(cm^2*day)"
 puts $nfileId "$Acc_1_cm ! reactive mineral surface area per unit vol. of porous media estimated  1/cm"
 puts $nfileId "$soil_bulk_den_g_cm3 ! soil bulk density cm^3/g"
 
-for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
-puts $nfileId "$slim_background_conc($jj)            ! background conc"
-}
 } elseif {$modelname == "VG"} {
 
 puts $nfileId "$firstorderdecay_1_day ! first-order decay"
 puts $nfileId "$zeroorderdecay_1_day ! zero-order decay"
 
-for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
-puts $nfileId "$slim_background_conc($jj)            ! background conc"
-}
 } elseif {$modelname == "Chen1992"} {
  puts $nfileId "$kmax_tol ! maximum rate of substrate utilization"
  puts $nfileId "$kmax_ben ! maximum rate of substrate utilization"
@@ -428,10 +439,17 @@ puts $nfileId "$slim_background_conc($jj)            ! background conc"
  puts $nfileId    "$r_tol_do    ! Utilizaton ratio, X" 
  puts $nfileId    "$r_ben_do    ! Utilizaton ratio, X"
  puts $nfileId    "$decay ! biomass decay coefficient"
- for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
- puts $nfileId "$slim_background_conc($jj)            ! background conc"
- }
 }
+for {set jj 1} {$jj <= $num_constituents} {incr jj 1} {
+   puts $nfileId "$slim_background_conc_type($jj)       !backgorund type, const or PFBfile"
+   if { $slim_background_conc_type($jj) == "const" } {
+     puts $nfileId "$slim_background_conc($jj)            ! background conc"
+   } else {
+     puts $nfileId "\"$slim_background_conc($jj)\"          ! background conc"
+   }
+}
+
+
 close $fileId
 close $nfileId
 #

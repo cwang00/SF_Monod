@@ -22,7 +22,8 @@ MODULE MacQ1990unsat
      REAL :: EH    ! electorn acceptor Henry's constant
      REAL :: SD0    ! substrate free air diffusion coefficient
      REAL :: ED0    ! electorn free air diffusion coefficient
-     REAL, DIMENSION(MacQ1990unsatTotalNumberOfSpecies)::backgroundConc
+!     REAL, DIMENSION(MacQ1990unsatTotalNumberOfSpecies)::backgroundConc
+     REAL, ALLOCATABLE::backgroundConc(:,:,:,:)
    END TYPE MacQ1990unsatParameters
 
    REAL, ALLOCATABLE :: UBiomassConc(:,:,:)
@@ -35,7 +36,25 @@ MODULE MacQ1990unsat
       IMPLICIT NONE
 
       CHARACTER(LEN=100), INTENT(IN) :: mparfile
-      INTEGER :: I, J, K, idx, nx, ny, nz
+      CHARACTER(LEN=128) :: bgConcType
+      CHARACTER(LEN=500) :: bgConcPFBFile
+      INTEGER :: I, J, K,L,M,N, idx, nx, ny, nz
+      REAL*8 :: bgConcValue, dx, dy, dz
+      REAL*8 :: temp(nx,ny,nz)
+      INTEGER*4 :: nx1, ny1, nz1
+interface
+
+    SUBROUTINE pf_read(x,filename,nx,ny,nz,dx2,dy2,dz2)
+    real*8  :: x(:,:,:)
+    character*500 :: filename
+    integer*4 :: nx
+    integer*4 :: ny
+    integer*4 :: nz
+    real*8  :: dx2
+    real*8  :: dy2
+    real*8  :: dz2
+    END SUBROUTINE pf_read
+end interface
       OPEN(98, FILE = mparfile, STATUS = 'old' ) 
 
       DO I = 1, MacQ1990unsatTotalNumberOfSpecies
@@ -55,8 +74,31 @@ MODULE MacQ1990unsat
      READ(98,*) umpars%EH
      READ(98,*) umpars%SD0
      READ(98,*) umpars%ED0
+
+     ALLOCATE( umpars%backgroundConc(MacQ1990unsatTotalNumberOfSpecies,nx, ny, nz ) )
+
      DO I = 1, MacQ1990unsatTotalNumberOfSpecies
-        READ(98,*)  umpars%backgroundConc( I )
+        READ(98,*) bgConcType
+        IF ( TRIM( bgConcType  ) .eq. 'const' ) THEN
+           READ(98, *) bgConcValue
+           umpars%backgroundConc(I, :, :, : ) = bgConcValue
+        ELSE IF ( TRIM( bgConcType ) .eq. 'PFBFile' ) THEN
+           READ(98, *) bgConcPFBFile
+           CALL PF_READ( temp, bgConcPFBFile, &
+                        nx1, ny1, nz1, &
+                           dx, dy, dz )
+            DO L = 1, nx
+             DO M = 1, ny
+              DO N = 1, nz
+               umpars%backgroundConc(I,L,M,N) = temp(L,M,N)
+              END DO
+             END DO
+           END DO
+        ELSE
+                WRITE(*,*) 'ERROR: UNKNOWN Background concentration type ', &
+                            bgConcType 
+                STOP
+        ENDIF
      END DO
      CLOSE(98)
      ALLOCATE( UBiomassConc(nx, ny, nz) )
@@ -64,7 +106,7 @@ MODULE MacQ1990unsat
      DO I = 1, nx
        DO J = 1, ny
          DO K = 1, nz
-          UBiomassConc( I, J, K ) = umpars%backgroundConc(3)
+          UBiomassConc( I, J, K ) = umpars%backgroundConc(3, I,J,K)
          END DO  
        END DO
      END DO
@@ -111,10 +153,10 @@ MODULE MacQ1990unsat
 
       NEQ = MacQ1990unsatTotalNumberOfSpecies 
 
-      Y(1) = conc( 1, xloc, yloc, zloc ) +        &
-                        umpars%backgroundConc( 1 )     ! Substrate
-      Y(2) = conc( 2, xloc, yloc, zloc )  +       &
-                        umpars%backgroundConc( 2 ) ! electron acceptor
+      Y(1) = conc( 1, xloc, yloc, zloc ) ! +        &
+  !                       umpars%backgroundConc( 1 )     ! Substrate
+      Y(2) = conc( 2, xloc, yloc, zloc ) ! +       &
+  !                       umpars%backgroundConc( 2 ) ! electron acceptor
    !   Y(3) = conc( 3, xloc, yloc, zloc ) +       &
    !                     umpars%backgroundConc( 3 ) ! biomass
       Y(3) = UBiomassConc( xloc, yloc, zloc ) 

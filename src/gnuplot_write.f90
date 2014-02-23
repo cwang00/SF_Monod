@@ -14,9 +14,8 @@
 !    You should have received a copy of the GNU General Public License
 !    along with SLIM-Fast in /src/gpl.txt.  If not, see <http://www.gnu.org/licenses/>.
 
-SUBROUTINE gnuplot_write(x,ixlim,iylim,izlim,icycle,n_constituents,bg, vtk_file)
+SUBROUTINE gnuplot_write(x,ixlim,iylim,izlim,icycle,n_constituents, vtk_file)
 REAL*4    :: x(:,:,:,:)
-REAL, DIMENSION(:) :: bg
 INTEGER*4 :: ixlim
 INTEGER*4 :: iylim
 INTEGER*4 :: izlim
@@ -46,7 +45,7 @@ DO  j=1,iylim
 WRITE(15,*) '#Y =  ', j
 WRITE(15,*)
 DO  k=izlim, 1, -1
-        WRITE(15, (cfmat)) ( x(l,i,j,k)+bg(l), i = 1, ixlim )
+        WRITE(15, (cfmat)) ( x(l,i,j,k), i = 1, ixlim )
 END DO
 WRITE(15,*)
 END DO

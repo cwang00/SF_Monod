@@ -868,10 +868,10 @@ MODULE Particles
             pp( part, 4 ) = pp( part, 4 ) + partMassChange
            ENDDO 
        ELSE
-!           partMassChange = cellMassChange / total_part_dens( l )
-!           DO m = 1, total_part_dens( l )
-          partMassChange = cellMassChange / 10
-          DO m = 1, 10
+          partMassChange = cellMassChange / total_part_dens( l )
+          DO m = 1, total_part_dens( l )
+!          partMassChange = cellMassChange / 10
+!          DO m = 1, 10
                  IF ( totalremoved .GT. 0 ) THEN
                       idx = removed( totalremoved )
                       totalremoved = totalremoved - 1

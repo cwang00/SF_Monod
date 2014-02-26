@@ -295,7 +295,7 @@ WRITE(666,*) '    V4 2-10'
 WRITE(666,*)
 WRITE(666,*) ' Run: ',trim(runname)
 WRITE(666,*) ' Log Output File: ',trim(logfile)
-WRITE(666,*) ' Slim-Fast input file: ',trim(slimfile)
+!WRITE(666,*) ' Slim-Fast input file: ',trim(slimfile)
 WRITE(666,*)
 WRITE(666,*)
 if (iv_type == 1) then

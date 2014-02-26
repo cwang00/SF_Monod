@@ -190,7 +190,8 @@ REAL*8  time,  delc(5),vp(5), cellv, tloop,lamda,Prob,Zhl, &
 INTEGER*4   ici(10), nplane,  wellnpart, po(4,4),planeloc, &
     ll, done, iwjb, ijunk, iwjt,movedir,welloc(20,10),iplane, &
     iwflag(13), tempavg, n_ic_cats(13),ic_part_dens(13,20), icnpart, &
-    ic_cats(13, 20),ts1, iii, jjj, npcurrent,partsplit, ts, planedir(10), &
+    ic_cats(13, 20),ts1, iii, jjj, npcurrent,partsplit, partcombine, ts, &
+     planedir(10), &
  idecsteps, ii, jj, kk, ind_ic_catagory, icat, jcat, kcat, ic_cat_count, &
    kic, n_ic_timesteps, loop2, iic, cell_sink,boundary_cond(3,2),well_r(2,10000,3), &
         rw_ind(2), n_rw_ind(2), n_rw,imax, total_part_dens(13)
@@ -1039,9 +1040,9 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
   DO ii = 1, n_ic_timesteps
     READ (124,*) ts1, ic_time_begin(iic,ii),ic_time_end(iic,ii),   &
                  ic_mass_or_conc(iic, ii,1:n_ic_cats(iic))
-    WRITE(666,*) 'timestep:',ii
-    WRITE(666,*)  'time begin, end:',ic_time_begin(iic, ii),ic_time_end(iic, ii)
-    WRITE(666,*) ic_mass_or_conc(iic, ii,1:n_ic_cats(iic))
+!    WRITE(666,*) 'timestep:',ii
+!    WRITE(666,*)  'time begin, end:',ic_time_begin(iic, ii),ic_time_end(iic, ii)
+!    WRITE(666,*) ic_mass_or_conc(iic, ii,1:n_ic_cats(iic))
   END DO
   CLOSE (124)
   PRINT*,' read ind file'
@@ -1239,9 +1240,9 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
   READ (124,*)
   DO ii = 1, n_ic_timesteps
     READ (124,*) ts1, ic_time_begin(iic, ii),ic_time_end(iic, ii),ic_mass_or_conc(iic, ii,1:n_ic_cats(iic))
-    WRITE(666,*) 'timestep:',ii
-    WRITE(666,*)  'time begin, end:',ic_time_begin(iic, ii),ic_time_end(iic, ii)
-    WRITE(666,*) ic_mass_or_conc(iic, ii,1:n_ic_cats(iic))
+!    WRITE(666,*) 'timestep:',ii
+!    WRITE(666,*)  'time begin, end:',ic_time_begin(iic, ii),ic_time_end(iic, ii)
+!    WRITE(666,*) ic_mass_or_conc(iic, ii,1:n_ic_cats(iic))
   END DO
   CLOSE (124)
   PRINT*,' read ind file'
@@ -1360,6 +1361,8 @@ print*, 'v call'
 
 READ(99,*) partsplit
 PRINT*, ' partsplit',partsplit
+READ(99,*) partcombine
+PRINT*, ' partcombine',partcombine
 IF (partsplit == 1) READ(99,*) cmin
 READ(99,*) tempavg
 PRINT*,' tempav',tempavg
@@ -1581,6 +1584,10 @@ end if ! calc'd vel ?
     CALL countCellPart( n, ploc, p, ip, xtent, ytent, ztent, tnext, &
             total_part_dens )
   END DO
+
+  IF ( it .GT. 1 .AND. partcombine .EQ. 1 ) THEN
+    CALL combineParts( xtent, ytent, ztent, n_constituents, p, ip, total_part_dens)
+  ENDIF
 
 DO iic = 1, n_constituents
   !

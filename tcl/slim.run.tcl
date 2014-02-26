@@ -334,6 +334,17 @@ puts $fileId "$slim_number_particles($jj)				! num particles total "
 if {$part_split == "yes"} {puts $fileId "1							! Particle Splitting"
 puts $fileId "$min_conc						! min conc"
 } else { puts $fileId "0							! Fixed Number of Particles" }
+if {[info exists part_combine ]} {
+   if { $part_combine == "yes" && $part_split == "yes" } {
+	error "Both part_combine and part_split are set! Remove one!"     
+   } elseif { $part_combine == "yes" } {
+       puts $fileId "1                      ! combine particles using total_part_dens"
+   } else {
+       puts $fileId  "0                    !Do not combine particles" 
+   }
+} else {
+puts $fileId  "0                          !By default donot combine particles" 
+}
 # temporal averaging?
 if {$temp_averaging == "yes"} {puts $fileId "1							! Temporal Averaging"
 } else { puts $fileId "0							! Not temporally avging for concentration" }

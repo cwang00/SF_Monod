@@ -187,6 +187,51 @@ MODULE Particles
 
      END SUBROUTINE forgetCellPart
 
+     SUBROUTINE combineParts( nx, ny, nz, ns, p, ip, part_dens)
+        REAL*8, DIMENSION(:,:) :: p
+        INTEGER*4, DIMENSION(:,:) :: ip
+        INTEGER*4 :: nx, ny, nz, ns, I, J, K, l, ipart_remove, ipart_preserve   
+        INTEGER*4, DIMENSION(:) ::  part_dens(:)
+        INTEGER*4 :: pnumber, removedpnumber, countActualRemoved
+
+       DO I = 1, nx
+         DO J = 1, ny
+           DO K = 1, nz
+             DO l = 1, ns
+               IF( part_dens( l ) .GT. 0 .AND.                       &
+                      number_of_parts( l, I, J, K ) .GT. part_dens( l ) ) THEN
+                 countActualRemoved = 0
+                 DO ipart_remove = part_dens( l ) + 1,  number_of_parts( l, I, J, K )
+                    removedpnumber =                                     &
+                           part_numbers( l, I, J, K)%arr( ipart_remove )
+                  IF( ip(removedpnumber, 2 ) .EQ. 1 ) THEN
+
+                   DO ipart_preserve = 1,  part_dens( l )
+                    pnumber = part_numbers( l, I, J, K)%arr( ipart_preserve )
+                    
+                    p( pnumber, 4 ) = p(pnumber, 4 )                      &
+                            + p(removedpnumber, 4) / part_dens( l )
+                   ENDDO
+
+                   totalremoved = totalremoved + 1
+                   removed( totalremoved ) = removedpnumber 
+                   p( removedpnumber, 1 ) = -999.0
+                   p( removedpnumber, 2 ) = -999.0
+                   p( removedpnumber, 3 ) = -999.0
+
+                   countActualRemoved = countActualRemoved + 1
+                  ENDIF
+
+                 ENDDO
+                  number_of_parts( l, I, J, K ) =    &
+                      number_of_parts( l, I, J, K ) - countActualRemoved
+               ENDIF
+             END DO
+           END DO
+         END DO
+       END DO
+     END SUBROUTINE combineParts
+
      SUBROUTINE allocateParticles_Memory(  nx, ny, nz, ns, npmax, part_dens )
         INTEGER*4 :: nx, ny, nz, ns, npmax, i, j, k, l
         INTEGER*4, DIMENSION(:) ::  part_dens(:)

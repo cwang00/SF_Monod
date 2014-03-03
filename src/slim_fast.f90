@@ -1585,9 +1585,9 @@ end if ! calc'd vel ?
             total_part_dens )
   END DO
 
-  IF ( it .GT. 1 .AND. partcombine .EQ. 1 ) THEN
-    CALL combineParts( xtent, ytent, ztent, n_constituents, p, ip, total_part_dens)
-  ENDIF
+!  IF ( it .GT. 1 .AND. partcombine .EQ. 1 ) THEN
+!    CALL combineParts( xtent, ytent, ztent, n_constituents, p, ip, total_part_dens)
+!  ENDIF
 
 DO iic = 1, n_constituents
   !
@@ -3233,7 +3233,7 @@ END DO ! the big particle loop:  DO  n = 1, np
  CALL geochemicalReactions( p, ip, np, npmax, delv,  n_constituents, &
                            xtent, ytent, ztent, OldC, c, ( tnext - t_prev ), &
                            porosity, sat, modelname, use_pf_mask, pf_mask,  &
-                          total_part_dens )
+                          total_part_dens, partcombine )
  C = OldC 
 !  np = mp
 !  CALL updateConc( c, p, ip, np, delc, domax, sat, porosity, Rtard, tnext )

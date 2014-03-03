@@ -301,7 +301,7 @@ MODULE Particles
      SUBROUTINE geochemicalReactions( pp, ip, np, npmax, delv,  &
             ns, nx, ny, nz, conc, conc_before_average, dt_day,  &
                     porosity, sat, modelname, use_pf_mask, mask, &
-                   total_part_dens  )
+                   total_part_dens, partcombine  )
        REAL*8, DIMENSION(:,:) :: pp, lastprint
        REAL*8, DIMENSION(:,:,:) :: porosity, sat
        REAL*8 :: mask(:,:,:)
@@ -317,7 +317,7 @@ MODULE Particles
        INTEGER*4 ::  npmax, np, use_pf_mask
        CHARACTER*20 substratename, modelname
        LOGICAL :: found, recycle, iswithinmask
-       INTEGER*4 :: total_part_dens( 13 )
+       INTEGER*4 :: total_part_dens( 13 ), partcombine
 
        IF ( modelname == 'Chen1992' ) THEN
                ns_moving = Chen1992TotalNumberOfSpecies - 2
@@ -453,7 +453,7 @@ MODULE Particles
 !                              porosity, sat, modelname  )
      CALL adjustParticleMassForNewCellConc( modelname, mass, &
               delv, sat, porosity, np, npmax, pp,ip, l, i, j, k, &
-              total_part_dens )
+              total_part_dens, partcombine )
 
              ! update concentrations
              conc( l, i, j, k)  = conc(l, i, j, k ) +     &
@@ -869,7 +869,7 @@ MODULE Particles
 
      SUBROUTINE adjustParticleMassForNewCellConc( modelname, cellMassChange,  &
                        delv, sat, porosity, np, npmax, pp,ip, l, i, j, k,     &
-                      total_part_dens )
+                      total_part_dens, partcombine )
        REAL*8, DIMENSION(:,:) :: pp
        INTEGER*4,  DIMENSION(:,:) :: ip
        INTEGER ::  i, j, k, l, part, m, n
@@ -879,7 +879,9 @@ MODULE Particles
        CHARACTER*20 modelname
        REAL*4 :: bconc
        REAL*8, DIMENSION(:,:,:) :: porosity, sat
-       INTEGER*4 :: total_part_dens(13)
+       INTEGER*4 :: total_part_dens(13), partcombine
+       INTEGER*4 :: ipart_remove, ipart_preserve   
+       INTEGER*4 :: pnumber, removedpnumber, countActualRemoved
 
        IF ( modelname == 'Chen1992' ) THEN
                bconc = cpars%backgroundConc(l,i,j,k)
@@ -912,6 +914,35 @@ MODULE Particles
             part = part_numbers( l, i, j,k )%arr( m )
             pp( part, 4 ) = pp( part, 4 ) + partMassChange
            ENDDO 
+           IF( partcombine .EQ. 1 .AND.                       &
+             number_of_parts( l, I, J, K ) .GT. total_part_dens( l ) ) THEN
+               countActualRemoved = 0
+               DO ipart_remove = total_part_dens( l ) + 1,  &
+                                      number_of_parts( l, I, J, K )
+                    removedpnumber =                                     &
+                          part_numbers( l, I, J, K)%arr( ipart_remove )
+                 IF( ip(removedpnumber, 2 ) .EQ. 1 ) THEN
+
+                   DO ipart_preserve = 1,  total_part_dens( l )
+                    pnumber = part_numbers( l, I, J, K)%arr( ipart_preserve )
+                    
+                    pp( pnumber, 4 ) = pp(pnumber, 4 )                      &
+                            + pp(removedpnumber, 4) / total_part_dens( l )
+                   ENDDO
+
+                   totalremoved = totalremoved + 1
+                   removed( totalremoved ) = removedpnumber 
+                   pp( removedpnumber, 1 ) = -999.0
+                   pp( removedpnumber, 2 ) = -999.0
+                   pp( removedpnumber, 3 ) = -999.0
+
+                   countActualRemoved = countActualRemoved + 1
+                  ENDIF
+
+                 ENDDO
+                  number_of_parts( l, I, J, K ) =    &
+                      number_of_parts( l, I, J, K ) - countActualRemoved
+               ENDIF
        ELSE
           partMassChange = cellMassChange / total_part_dens( l )
           DO m = 1, total_part_dens( l )

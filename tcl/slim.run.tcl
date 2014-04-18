@@ -246,6 +246,18 @@ puts $fileId  "const_flux                          !const flux boundary"
 
 puts $fileId "$modelname                           !select which reaction model"
 
+if {[info exists number_of_zones]} {
+  puts $fileId "$number_of_zones               ! number of zones "
+  for {set jj 1} {$jj <= $number_of_zones} {incr jj 1} {
+  puts $fileId "$zone_number($jj)"
+  }
+  if { $number_of_zones > 0 } {
+  puts $fileId "\"$zone_indicator_file\"               ! zone indicator file " 
+  }
+} else {
+  puts $fileId "-1                                 ! there is no zones"
+}
+
 if {[info exists parflow_mask ]} {
 	puts $fileId "1                               ! has parFlow mask file"
 	puts $fileId "\"$parflow_mask\"                 ! ParFlow mask file"

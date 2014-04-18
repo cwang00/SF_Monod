@@ -12,7 +12,9 @@ SUBROUTINE slimfast(xtent,ytent,ztent,delv,al,at, &
  half_life,k_att,k_det,iv_type, press,headfile,head_list_file,time_file, kxfile,kyfile,  &
  kzfile,vgafile,vgnfile,sresfile,npmax,give_up,epsi,vmult,vtk_file,  &
  write_vel_field, vel_field_file, saturated, &
- vga_const, vgn_const, sres_sat_const, modelname, bndcnd)
+ vga_const, vgn_const, sres_sat_const, modelname, bndcnd,           &
+     zone_ind, numzones, ind_zonenum, &
+     zones_mass_in_out )
 ! Slim-Fast Main Routine
 ! written by Reed M. Maxwell
 ! rmaxwell@mines.edu
@@ -42,6 +44,8 @@ SUBROUTINE slimfast(xtent,ytent,ztent,delv,al,at, &
 !  prop = 3 whether or not particle has crossed plane
 !  prop = 4 is 0 if the particle is not near a reflection boundary
 !          and l = 1,2 or 3 depending upon which bddy
+!  prop = 6 whether the particle is a new particle added to the domain, 
+!         -1 -- new particle, 0 - old particle
 !
 !  variables that are dependant on constituent
 ! 
@@ -209,7 +213,7 @@ INTEGER*4,allocatable::ic_cat_num(:,:,:,:),iP(:,:),irP(:),iprP(:,:), &
 
 INTEGER*4 l,i,j,k,n,ploc(4),np,domax(4),numax,loc3p,it, &
     passes, locstuck(5),  itemp, wc,av(5), &
-    tp1,tp2,tp3, tloc(5), inbounds, wellfile
+    tp1,tp2,tp3, tloc(5), inbounds, wellfile, oldploc(4)
 
 integer*4 ir, icpartdiv, nr, mp
 
@@ -232,6 +236,11 @@ INTEGER*4 :: Xup_Ref, Xdown_Ref, Yup_Ref, Ydown_Ref, Zup_Ref, Zdown_Ref,    &
             use_pf_mask
 CHARACTER (LEN=20) :: modelname, bndcnd
 LOGICAL iswithintwocellsfrombdy
+!zone variables
+INTEGER*4 :: numzones
+INTEGER*4, DIMENSION(:,:,:) :: zone_ind
+INTEGER*4, DIMENSION(:) :: ind_zonenum
+REAL*4, DIMENSION(:,:,:) :: zones_mass_in_out
 
 interface
 
@@ -386,6 +395,10 @@ end interface
 
 PRINT*, 'hey made it here'
 PRINT*, ' tnext ', tnext
+WRITE(666,*)
+WRITE(666,*) 'hey made it here'
+WRITE(666,*)
+flush(666)
 
 tempavg = 0
 ir = -219191
@@ -403,8 +416,17 @@ allocate(v(3,xtent,ytent,ztent), c(n_constituents,xtent,ytent,ztent), &
                  hkz(xtent,ytent,ztent),vga(xtent,ytent,ztent),vgn(xtent,ytent,ztent),  &
                  sres(xtent,ytent,ztent), iprP(npmax,2), lastprint(npmax,3)) 
 
+WRITE(666,*)
+WRITE(666,*) 'allocated 1'
+WRITE(666,*)
+flush(666)
  allocate( ic_time_begin(13, 3000  ), ic_time_end( 13, 3000 ), &
             ic_mass_or_conc( 13, 3000, 20 ) )
+
+WRITE(666,*)
+WRITE(666,*) 'allocated 2'
+WRITE(666,*)
+flush(666)
 
 c = 0.d0
 mass = 0.d0
@@ -495,6 +517,7 @@ WRITE(666,*)
 WRITE(667,*)
 WRITE(667,*) 'Slim-Fast Warning and Error File'
 WRITE(667,*)
+flush(666)
 
 
 !
@@ -555,6 +578,7 @@ WRITE(666,*)
 WRITE(666,*) ' concentration nodal spacing:'
 WRITE(666,'( " dx,dy,dz: ",3(f7.2,"  "))') delc(1),delc(2),delc(3)
 WRITE(666,'(" vol of cell: ",e12.4)') cellv
+flush(666)
 
 
 rxx = 0.0D0
@@ -625,6 +649,8 @@ DO  i=1,nw
   WRITE(666,'(i5,": Q= ",e12.4)') i,well(i,5)
 END DO
 
+WRITE(666,*) ' before read mask'
+flush(666)
 ! read in mask
 READ(99,*) use_pf_mask
 READ(99,*) pf_mask_file
@@ -635,6 +661,8 @@ if ( use_pf_mask == 1 ) then
               xtent,ytent,ztent,delv(1),delv(2),delv(3))
 end if
 
+WRITE(666,*) ' after read mask'
+flush(666)
 ! read in plane info
 
 WRITE(666,*)
@@ -654,7 +682,7 @@ DO i = 1,nplane
 	,xplaneloc(i)
   
 END DO
-
+flush(666)
 
 if (iv_type == 1) then
         if( saturated == 3 ) then
@@ -798,6 +826,7 @@ DO iic = 1, n_constituents
       p(n,5) = n
 	  iP(n,1) = iiC
 	  iP(n,2) = 1
+	  iP(n,6) = -1
       n = n +1
     END DO
   END DO
@@ -894,6 +923,7 @@ kk = 1
     p(n,7) = 0.0D0    !dble(n-1)*dicnstep
     iP(n,1) = iiC  
 	iP(n,2) = 1  
+	iP(n,6) = -1  
 !    IF (concprint >= 1) THEN
       inbounds = 1
       DO  l = 1, numax
@@ -974,6 +1004,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             p(n,7) = 0.0D0
             iP(n,1) = iiC
             iP(n,2) = 1
+	    iP(n,6) = -1  
 !            IF (concprint >= 1) THEN
               inbounds = 1
               DO  l = 1, numax
@@ -1087,6 +1118,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
                 p(n,7) = ic_time_begin(iic,jjj) + ran1(ir)*(ic_time_end(iic,jjj)-ic_time_begin(iic,jjj))
                 ip(n,1) = iiC
                 ip(n,2) = 1
+	        iP(n,6) = -1  
 !                IF (concprint >= 1) THEN
                   inbounds = 1
                   DO  l = 1, numax
@@ -1175,6 +1207,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             p(n,7) = 0.0D0
             iP(n,1) = iiC
             iP(n,2) = 1
+	    iP(n,6) = -1  
 !            IF (concprint >= 1) THEN
               inbounds = 1
               DO  l = 1, numax
@@ -1308,6 +1341,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             p(n,7) = 0.0D0
             iP(n,1) = iiC
             iP(n,2) = 1
+	    iP(n,6) = -1  
 !            IF (concprint >= 1) THEN
               inbounds = 1
               DO  l = 1, numax
@@ -1389,6 +1423,7 @@ WRITE(666,*)
 WRITE(666,*) ' number of timesteps to skip: ',ts
 nt = nt - ts
 CLOSE(99)
+flush(666)
 
 ! skip ts timesteps
 do i= 1, ts
@@ -1577,13 +1612,13 @@ end if ! calc'd vel ?
   
   movedir = 99
 
-  DO  n = 1, np
-      DO  l = 1, numax
-	ploc(l) = IDINT(p(n,l)/delv(l)) + 1
-      END DO
-    CALL countCellPart( n, ploc, p, ip, xtent, ytent, ztent, tnext, &
-            total_part_dens )
-  END DO
+!  DO  n = 1, np
+!      DO  l = 1, numax
+!	ploc(l) = IDINT(p(n,l)/delv(l)) + 1
+!      END DO
+!    CALL countCellPart( n, ploc, p, ip, xtent, ytent, ztent, tnext, &
+!            total_part_dens )
+!  END DO
 
 !  IF ( it .GT. 1 .AND. partcombine .EQ. 1 ) THEN
 !    CALL combineParts( xtent, ytent, ztent, n_constituents, p, ip, total_part_dens)
@@ -1605,14 +1640,12 @@ DO iic = 1, n_constituents
   END IF ! ic = 6
 END DO  ! DO iiC = 1, n_constituents
 
- CALL forgetCellPart()
+ CALL forgetCellPart(xtent, ytent, ztent, n_constituents)
 
 WRITE(666,*)
 WRITE(666,*) ' Number of Particles in step: ', it, ' is ', np
 WRITE(666,*)
 
-! Clear out old number_of_parts
-   number_of_parts = 0
 !
 ! Clear out old concentrations
 !
@@ -1622,6 +1655,7 @@ WRITE(666,*)
   
  ! print*, C(1,1,1,1)
 
+ zones_mass_in_out = 0.0
 
 ! mp = np
 !
@@ -1636,6 +1670,9 @@ WRITE(666,*)
 origloc( 1 ) = p(n,1)
 origloc( 2 ) = p(n,2)
 origloc( 3 ) = p(n,3)
+      DO  l = 1, numax
+            oldploc(l) = IDINT(p(n,l)/delc(l))  + 1
+      END DO
     IF (partprint == 1) THEN
       IF ((p(n,1) > 0.).AND.(p(n,2) > 0.).AND.(p(n,3) > 0.))  &
       pdist = 0.0d0
@@ -3095,6 +3132,13 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             ploc(l) = IDINT(p(n,l)/delc(l))  + 1
       END DO
 
+    IF ( numzones .GE. 0 ) THEN
+      CALL zones_in_out( n, p, ip, sat, porosity, total_part_dens, &
+                        oldploc, ploc, delv, &
+                      zone_ind, numzones, ind_zonenum,  modelname, &
+                     zones_mass_in_out ) 
+    ENDIF
+
     CALL countCellPart( n, ploc, p, ip, xtent, ytent, ztent, tnext, &
             total_part_dens )
 
@@ -3225,7 +3269,7 @@ END DO ! the big particle loop:  DO  n = 1, np
 !  CALL    checkConc( p, cellv, c, porosity, sat, xtent, ytent, ztent,      &
 !                                                  n_constituents, modelname )  
 
-  CALL maxMassAllCellSpec( p, np, ip )
+ ! CALL maxMassAllCellSpec( p, np, ip )
 
  CALL ConcAddBackground( c, xtent, ytent, ztent, n_constituents, modelname )
 !   OldC = ( OldC + C ) / 2
@@ -3287,8 +3331,8 @@ end if ! part_conc_write
         else if (concprint == 2 ) THEN
               WRITE (dotit,199) it
 
-  !CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),it,n_constituents,vtk_file)
-  CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,vtk_file)
+  CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),it,n_constituents,vtk_file)
+  !CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,vtk_file)
       
     END IF   !print concentration
 
@@ -3444,13 +3488,31 @@ end if ! part_conc_write
 
 
  CALL ConcRemoveBackground( c, xtent, ytent, ztent, n_constituents, modelname )
- CALL forgetCellPart()
+! CALL forgetCellPart()
 !
 ! Next timestep
 !
 !@RMM
 !print*, iP(1:500,6)
     WRITE(666,*) 'Current number of particles: ', np
+    IF ( numzones .GE. 0 ) THEN
+
+      DO i = 1, numzones + 1
+        IF ( i .EQ. 1 ) THEN
+           WRITE(666,*) 'ZONE: ',  i - 1
+        ELSE
+           WRITE(666,*) 'ZONE: ',  ind_zonenum( i - 1 )
+        ENDIF
+        WRITE(666,*) 'SPECIES                IN(mg)                OUT (mg)' &
+                    // '           storage(mg)'
+        DO j = 1, n_constituents
+          WRITE(666, '(1X, I4, 1X, E15.7, 1X, E15.7, 1X, E15.7)' ) &
+                   j, zones_mass_in_out( i, 1, j ),  &
+                      zones_mass_in_out(i, 2, j ) ,  & 
+                      zones_mass_in_out(i, 3, j )
+        ENDDO
+      ENDDO
+    ENDIF
     flush(666)
 
 ! now write out concentration at given time
@@ -3478,9 +3540,9 @@ CALL deallocateParticles_Memory( xtent, ytent, ztent, n_constituents )
 if (recycle_well == 1) then
 mass_rec = 0
 
-do n =1, np
-mass_rec(irP(n) + 1) = mass_rec(irP(n) + 1) + P(n,4)
-end do ! n
+!do n =1, np
+!mass_rec(irP(n) + 1) = mass_rec(irP(n) + 1) + P(n,4)
+!end do ! n
 
 write(666,*)
 write(666,*) ' Mass of particles recycled '

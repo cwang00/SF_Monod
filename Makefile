@@ -4,7 +4,7 @@ slim_richards.o  min_react_lu.o  v_calc.o vtk_write.o \
 NTransport.o VGTransport.o Chen1992.o Particles.o svode.o gnuplot_write.o  \
 write_vel_gnuplot.o write_vel_gnuplot_2d.o\
 MacQ1990Transport.o MacQ1990unsat.o gen_part.o ran1.o                      \
-v_calc_const_sat.o 
+v_calc_const_sat.o zone_indicator_read.o
 
 sources = \
 src/cbin_write.f90  src/mat_dif_init.f90  src/rand_mod.f90 \
@@ -16,7 +16,8 @@ src/svode.f src/gnuplot_write.f90 src/write_vel_gnuplot.f90 \
 src/write_vel_gnuplot_2d.f90 \
 src/write_sat_gnuplot_2d.f90 \
 src/v_calc_const_sat.f90   \
-src/cbin_write_real8.f90 src/gen_part.f90 src/ran1.f90
+src/cbin_write_real8.f90 src/gen_part.f90 src/ran1.f90 \
+src/zone_indicator_read.f90
 
 
 
@@ -27,8 +28,8 @@ F90 = pgf90
 #F90 = gfortran
 
 SLIM_r2.0.exe : $(source)
-	$(F90) -g -o bin/SLIM.exe $(sources)
-#	$(F90) -O3 -o bin/SLIM.exe $(sources)
+	$(F90) -O3 -o bin/SLIM.exe $(sources)
+#	$(F90) -g -o bin/SLIM.exe $(sources)
 
 .o : 
 	$(F90) -c src/$(objects)

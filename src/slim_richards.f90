@@ -86,18 +86,22 @@ INTEGER*4   backsl, i,       &
     xtent,ytent,ztent,       &
 	n_constituents, ii, jj,  &
 	ircheck, iv_type,phi_type, &
-	npmax, give_up, press, write_vel_field
+	npmax, give_up, press, write_vel_field, &
+        numberofzones 
 INTEGER saturated
 
 REAL*8,allocatable::phi(:,:,:),r(:,:,:,:),rtemp(:),half_life(:),		&
     k_det(:,:,:,:),k_att(:,:,:,:),katt_temp(:),kdet_temp(:), bulk_den(:), &
     R_temp(:,:,:)
 
+INTEGER*4, allocatable :: zoneindicator(:,:,:), zoneindicator_num(:)
+REAL*4, allocatable ::    zones_mass_in_out(:,:,:)
 
 CHARACTER (LEN=500) ::  runname, slimfile, logfile,      &
     partfile,  momfile, wellover, kxfile,kyfile,kzfile,  &
 	headfile, phifile,head_list_file, time_file,   &
-    vgafile, vgnfile, sresfile, vtk_file, vel_field_file
+    vgafile, vgnfile, sresfile, vtk_file, vel_field_file, &
+    zoneindicatorfile
 
 CHARACTER (LEN=20) :: modelname, bndcnd
 
@@ -124,6 +128,15 @@ INTERFACE
     real*8  :: dy2
     real*8  :: dz2
     END SUBROUTINE pf_read
+
+SUBROUTINE zone_indicator_read(indicator_file, indicator, &
+                              xtent, ytent, ztent)
+INTEGER*4 :: ixlim, xtent
+INTEGER*4 :: iylim, ytent
+INTEGER*4 :: izlim, ztent
+INTEGER*4 :: indicator(:,:,:)
+CHARACTER (LEN=256)      :: indicator_file
+END SUBROUTINE zone_indicator_read
 
 !SUBROUTINE slimfast(xtent,ytent,ztent,delv,al,at,							 &
 !    concprint,wellprint,momprint,confile, tnext,nt,partprint,vlocfile,	         &
@@ -627,6 +640,31 @@ ELSE
                stop
 ENDIF
 
+READ(99,*) numberofzones
+
+IF ( numberofzones .EQ. 0 ) THEN
+     ALLOCATE( zoneindicator_num( 1 ) )
+     ALLOCATE( zones_mass_in_out( 1, 3, n_constituents ) )
+     ALLOCATE( zoneindicator( xtent, ytent, ztent) )
+     zoneindicator = 0
+ELSEIF (numberofzones .GT. 0 ) THEN
+     ALLOCATE( zoneindicator_num( numberofzones ) )
+        DO I = 1, numberofzones
+          read(99,*) zoneindicator_num(I) 
+        ENDDO
+     read(99,*) zoneindicatorfile   
+     ALLOCATE( zoneindicator( xtent, ytent, ztent) )
+
+     ALLOCATE( zones_mass_in_out( numberofzones + 1, 3, n_constituents ) )
+
+     CALL zone_indicator_read( zoneindicatorfile, zoneindicator, &
+                              xtent, ytent, ztent ) 
+ELSE
+
+ENDIF
+
+
+
 
 vmult = 1.0D0
 IF (backsl == 1) vmult = -1.0D0
@@ -654,7 +692,8 @@ CALL slimfast(xtent,ytent,ztent,delv,al,at,                            &
     partfile,nw,wells,welltnext,moldiff,welltnumb, r,phi,n_constituents, &
 	half_life,k_att,k_det,iv_type,press, headfile,head_list_file, time_file, &
 	 kxfile,kyfile,kzfile,vgafile,vgnfile,sresfile,npmax, give_up, epsi,vmult, &
-   vtk_file,write_vel_field, vel_field_file, saturated, vga_const, vgn_const, sres_sat_const, modelname, bndcnd)
+   vtk_file,write_vel_field, vel_field_file, saturated, vga_const, vgn_const, sres_sat_const, modelname, bndcnd,            &
+   zoneindicator, numberofzones, zoneindicator_num, zones_mass_in_out )
 	
 
 print*, 'finished'

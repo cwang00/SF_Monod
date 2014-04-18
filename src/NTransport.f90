@@ -60,12 +60,12 @@ MODULE NTransport
      REAL :: Acc_1_cm
      REAL :: Soil_bulk_den_g_cm3
 !     REAL, DIMENSION(TotalNumberOfSpecies)::backgroundConc
-     REAL, ALLOCATABLE::backgroundConc(:,:,:,:)
+     REAL, DIMENSION(:,:,:,:), ALLOCATABLE :: backgroundConc
      REAL :: MYNPARS
    END TYPE NTransParameters
 
-   REAL, ALLOCATABLE :: NitrifierConc(:,:,:)
-   REAL, ALLOCATABLE :: DenitrifierConc(:,:,:)
+   REAL, DIMENSION(:,:,:), ALLOCATABLE :: NitrifierConc
+   REAL, DIMENSION(:,:,:), ALLOCATABLE :: DenitrifierConc
 
    TYPE( NTransParameters ) :: npars
 

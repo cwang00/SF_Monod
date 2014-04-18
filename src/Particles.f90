@@ -23,15 +23,15 @@ MODULE Particles
    END TYPE Ptr_to_array
 
    TYPE ( Ptr_to_array ), DIMENSION(:,:,:,:), ALLOCATABLE :: part_numbers 
-   INTEGER, DIMENSION(:,:,:,:), ALLOCATABLE :: number_of_parts
-   INTEGER, DIMENSION(:,:,:,:), ALLOCATABLE :: max_number_of_parts
+   INTEGER*4, DIMENSION(:,:,:,:), ALLOCATABLE :: number_of_parts
+   INTEGER*4, DIMENSION(:,:,:,:), ALLOCATABLE :: max_number_of_parts
 !   REAL*8, DIMENSION(:,:), ALLOCATABLE :: tmpp, tmplastprint
 !   INTEGER, DIMENSION(:,:), ALLOCATABLE :: tmpipwell
 !   INTEGER*4, DIMENSION(:,:), ALLOCATABLE :: tmpip, tmpiprp
 !   INTEGER*4, DIMENSION(:), ALLOCATABLE :: tmpirp
 !   INTEGER, DIMENSION(:), ALLOCATABLE :: partNumber
    INTEGER*4, DIMENSION(:), ALLOCATABLE :: removed
-   INTEGER totalremoved, total_part_dens(13)
+   INTEGER*4 totalremoved, total_part_dens(13)
    REAL*8, DIMENSION(TotalNumberOfSpecies) :: maxParticleMass
 
    CONTAINS
@@ -132,34 +132,9 @@ MODULE Particles
                   .AND. ( ploc(3) .LE. nz ) .AND.                     &
                   ( pp( n, 7 ) .LE. tnext ) ) THEN
 
-           number_of_parts( ip(n, 1), ploc(1), ploc(2), ploc(3) ) =     &
-             number_of_parts( ip(n, 1), ploc(1), ploc(2), ploc(3) ) + 1
+           CALL addAndResizePartNumbers(n, ip, ploc(1), ploc(2), ploc(3), &
+                                        part_dens)
 
-         IF ( number_of_parts( ip(n, 1), ploc(1), ploc(2), ploc(3) ) .GT.  &
-            max_number_of_parts( ip(n, 1), ploc(1), ploc(2), ploc(3) )  ) THEN
-
-            max_number_of_parts( ip(n, 1), ploc(1), ploc(2), ploc(3) ) = &
-             max_number_of_parts( ip(n, 1), ploc(1), ploc(2), ploc(3) ) + &
-                  part_dens( ip(n,1) )
-
-              ALLOCATE( temp(                                              &
-                number_of_parts( ip(n, 1), ploc(1), ploc(2), ploc(3) ) - 1 ) )
-                temp = part_numbers( ip(n, 1), ploc(1), ploc(2), ploc(3) )%arr
-              DEALLOCATE(                                                   &
-                   part_numbers( ip(n, 1), ploc(1), ploc(2), ploc(3) )%arr )
-              ALLOCATE(                                                     &
-                   part_numbers( ip(n, 1), ploc(1), ploc(2), ploc(3) )%arr( &
-                 max_number_of_parts( ip(n, 1), ploc(1), ploc(2), ploc(3) ) &
-                     ) )
-              part_numbers( ip(n, 1), ploc(1), ploc(2), ploc(3) )%arr(   &
-              1:number_of_parts( ip(n, 1), ploc(1), ploc(2), ploc(3) ) - 1 ) &
-                = temp 
-              DEALLOCATE( temp )
-         END IF
-
-           part_numbers( ip(n, 1), ploc(1), ploc(2), ploc(3) )%arr(    &
-             number_of_parts( ip(n, 1), ploc(1), ploc(2), ploc(3) ) ) = n
-             
         END IF
 
          !
@@ -179,11 +154,91 @@ MODULE Particles
 
      END SUBROUTINE countCellPart
 
-     SUBROUTINE forgetCellPart( )
+     SUBROUTINE addAndResizePartNumbers(n, ip, i, j, k, part_dens)
+
+       INTEGER*4, DIMENSION(:,:) :: ip
+       INTEGER*4, DIMENSION(:) :: ploc, part_dens
+       INTEGER*4 :: n, i, j, k, m
+       INTEGER, DIMENSION(:), ALLOCATABLE :: temp
+
+         number_of_parts( ip(n, 1), i, j, k) =     &
+             number_of_parts( ip(n, 1), i, j, k ) + 1
+
+       IF( ALLOCATED( part_numbers( ip(n, 1), i,j,k )%arr ) ) THEN
+         IF ( number_of_parts( ip(n, 1), i, j, k ) .GT.  &
+            max_number_of_parts( ip(n, 1), i,j,k )  ) THEN
+
+            DO WHILE( number_of_parts( ip(n, 1), i, j, k ) .GT.  &
+                      max_number_of_parts( ip(n, 1), i,j,k )  )
+
+              max_number_of_parts( ip(n, 1), i,j,k ) = &
+               max_number_of_parts( ip(n, 1), i,j,k ) + &
+                  part_dens( ip(n,1) )
+            ENDDO
+
+              ALLOCATE( temp(                                              &
+                number_of_parts( ip(n, 1), i,j,k ) - 1 ) )
+
+           !     temp = part_numbers( ip(n, 1), i,j,k )%arr
+               DO m = 1, number_of_parts( ip(n, 1), i,j,k ) - 1 
+                temp(m) = part_numbers( ip(n, 1), i,j,k )%arr( m )
+               ENDDO
+              DEALLOCATE(part_numbers( ip(n, 1), i,j,k )%arr )
+              NULLIFY( part_numbers( ip(n,1), i, j, k)%arr )
+              ALLOCATE(                                                     &
+                   part_numbers( ip(n, 1), i,j,k )%arr( &
+                 max_number_of_parts( ip(n, 1), i,j,k ) &
+                     ) )
+             DO m = 1, number_of_parts( ip(n, 1), i,j,k ) - 1 
+!               part_numbers( ip(n, 1), i,j,k )%arr(   &
+!              1:number_of_parts( ip(n, 1), i,j,k ) - 1 ) &
+!                = temp 
+               part_numbers( ip(n, 1), i,j,k )%arr( m ) = temp( m ) 
+             ENDDO
+              DEALLOCATE( temp )
+         END IF
+
+        ELSE
+         IF ( number_of_parts( ip(n, 1), i, j, k ) .GT.  &
+            max_number_of_parts( ip(n, 1), i,j,k )  ) THEN
+
+            DO WHILE( number_of_parts( ip(n, 1), i, j, k ) .GT. &
+                max_number_of_parts( ip(n, 1), i,j,k )  )
+
+              max_number_of_parts( ip(n, 1), i,j,k ) = &
+              max_number_of_parts( ip(n, 1), i,j,k ) + &
+                  part_dens( ip(n,1) )
+
+            ENDDO
+         ENDIF
+         ALLOCATE( part_numbers( ip(n, 1), i,j,k )%arr( &
+                 max_number_of_parts( ip(n, 1), i,j,k )  ) )
+        ENDIF
+
+         part_numbers( ip(n, 1), i,j,k )%arr(    &
+             number_of_parts( ip(n, 1), i,j,k ) ) = n
+
+     END SUBROUTINE addAndResizePartNumbers
+
+     SUBROUTINE forgetCellPart( nx,ny,nz,ns )
+
+        INTEGER*4 :: nx, ny, nz, ns, l, i, j, k
 
            number_of_parts = 0
            totalremoved = 0
            removed = 0
+         DO l = 1, ns
+           DO i = 1, nx
+             DO j = 1, ny
+               DO k = 1, nz
+                 IF( ALLOCATED( part_numbers( l, i, j, k )%arr )) THEN
+                    DEALLOCATE( part_numbers( l, i, j, k)%arr )              
+                    NULLIFY( part_numbers( l, i, j, k)%arr )
+                 ENDIF 
+              END DO
+             END DO
+           END DO
+         END DO
 
      END SUBROUTINE forgetCellPart
 
@@ -246,16 +301,20 @@ MODULE Particles
        ALLOCATE( removed( npmax ) )
 !       ALLOCATE( partNumber(npmax) )
        ALLOCATE( part_numbers( ns, nx, ny, nz ) )
-       DO I = 1, nx
-         DO J = 1, ny
-           DO K = 1, nz
-             DO l = 1, ns
-              max_number_of_parts(l, I, J, K) = part_dens(l)
-              ALLOCATE( part_numbers( l, I, J, K )%arr( part_dens(l) ) )
-             END DO
-           END DO
-         END DO
-       END DO
+       DO l = 1, ns
+         max_number_of_parts(l, 1:nx, 1:ny, 1:nz) = part_dens(l)
+       ENDDO
+!       number_of_parts = 0
+!       DO I = 1, nx
+!         DO J = 1, ny
+!           DO K = 1, nz
+!             DO l = 1, ns
+!              max_number_of_parts(l, I, J, K) = part_dens(l)
+!             ! ALLOCATE( part_numbers( l, I, J, K )%arr( part_dens(l) ) )
+!             END DO
+!           END DO
+!         END DO
+!       END DO
        
        totalremoved = 0
 !       rmcnter1 = 0
@@ -965,12 +1024,16 @@ MODULE Particles
                   !pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
                   ip(idx,1) = l
                   ip(idx,2) = 1
+                  ip(idx,6) = 0
 
                  ELSE
                    PRINT*, '2 max num particles exceeded. &
                            &increase npmax parameter ',npmax
                    STOP
                  ENDIF
+
+           CALL addAndResizePartNumbers(idx, ip, I, J, K, total_part_dens)
+
            ENDDO 
 !        WRITE(*,*)'Warning! -------' 
 !        WRITE(*,*)'   particle number is 0 for species number ', l , &
@@ -2218,5 +2281,177 @@ MODULE Particles
 
      END SUBROUTINE ConcRemoveBackground
 
-     
+     SUBROUTINE zones_in_out(n, p, ip, sat, porosity, part_dens, &
+                oldloc, currloc, delv, zone_ind, numzones, ind_num,        &
+                modelname, zones_mass_in_out  )
+
+      REAL*8, DIMENSION(:,:) :: p
+      REAL*8, DIMENSION(:,:,:) :: porosity, sat
+      INTEGER*4, DIMENSION(:) ::  part_dens(:)
+      INTEGER*4, DIMENSION(:,:)  :: ip
+      CHARACTER (LEN=20) :: modelname
+      INTEGER*4 ::  n, numzones, II
+      INTEGER*4, DIMENSION(:) :: oldloc, currloc
+      REAL*8, DIMENSION(:) :: delv
+      INTEGER*4, DIMENSION(:,:,:) :: zone_ind
+      INTEGER*4, DIMENSION(:) :: ind_num
+      REAL*4, DIMENSION(:,:,:) :: zones_mass_in_out
+      REAL*4 :: bconc
+
+      IF ( modelname == 'Chen1992' ) THEN
+                  bconc =cpars%backgroundConc(ip(n,1),      &
+                                         oldloc(1),oldloc(2),oldloc(3))
+      ELSE IF( modelname == 'MacQ1990' ) THEN
+                  bconc =mpars%backgroundConc(ip(n,1),            &
+                                         oldloc(1),oldloc(2),oldloc(3))
+      ELSE IF( modelname == 'MacQ1990unsat' ) THEN
+                  bconc =umpars%backgroundConc(ip(n,1),           &
+                                        oldloc(1),oldloc(2),oldloc(3))
+      ELSE IF( modelname == 'MacQ' ) THEN
+                  bconc =npars%backgroundConc(ip(n,1),            &
+                                         oldloc(1),oldloc(2),oldloc(3))
+      ELSE IF( modelname == 'VG' ) THEN
+                  bconc =vgpars%backgroundConc(ip(n,1),     &
+                                         oldloc(1),oldloc(2),oldloc(3))
+      ELSE IF( modelname == 'noreact' ) THEN
+                  bconc = 0.0
+      ELSE 
+                  WRITE(*,*) 'ERROR: non-known model name: ', modelname
+                  stop
+      ENDIF
+
+         ! entering the whole domain, zone 0 is the whole domain
+      IF ( ip(n, 6) .EQ. -1 ) THEN
+            zones_mass_in_out(1, 1, ip(n,1) ) =                     &
+                       zones_mass_in_out(1, 1, ip(n,1) ) + p(n,4)   &
+                        + bconc * porosity( oldloc(1), oldloc(2), &
+                          oldloc(3) ) * delv(1) * delv(2) * delv(3) * sat( oldloc(1), oldloc(2), oldloc(3) ) &
+                          * 1000 / part_dens( ip(n,1) )
+
+               DO II = 1, numzones
+
+                  ! entering zone 
+                 IF(  zone_ind(oldloc(1), oldloc(2), oldloc(3) ) .EQ. &
+                      ind_num( II ) ) THEN
+                   zones_mass_in_out( II + 1, 1, ip(n,1) ) =             &
+                       zones_mass_in_out( II + 1, 1, ip(n,1) ) +        &
+                       p(n,4) + bconc * porosity( oldloc(1), oldloc(2), &
+                          oldloc(3) ) * delv(1) * delv(2) * delv(3) * sat( oldloc(1), oldloc(2), oldloc(3) ) &
+                          * 1000 / part_dens( ip(n,1) )
+                   EXIT
+                 ENDIF
+               ENDDO
+            ip( n, 6 ) = 0;
+      ENDIF 
+
+           ! leaving the whole domain, zone 0 is the whole domain
+      IF( (oldloc(1) .GT. 0 .AND. oldloc(2) .GT. 0 .AND. oldloc(3) .GT. 0 ) &
+             .AND. ( p(n,1) .LE. 0.0 .OR. p(n,2) .LE. 0.0 .OR. &
+                      p(n,3) .LE. 0.0 ) ) THEN
+            zones_mass_in_out(1, 2, ip(n,1) ) =                     &
+                       zones_mass_in_out(1, 2, ip(n,1) ) + p(n,4)   &
+                        + bconc * porosity( oldloc(1), oldloc(2), &
+                          oldloc(3) ) * delv(1) * delv(2) * delv(3) * sat( oldloc(1), oldloc(2), oldloc(3) ) &
+                          * 1000 / part_dens( ip(n,1) )
+                       !   * 1000 / old_number_of_parts( ip(n,1), oldloc(1), &
+                       !      oldloc(2), oldloc(3) )
+      ENDIF
+
+      !domain storage
+      IF ( (oldloc(1) .GT. 0 .AND. oldloc(2) .GT. 0 .AND. oldloc(3) .GT. 0 ) &
+          .AND. zone_ind( oldloc(1), oldloc(2), oldloc(3) ) .EQ. 0 ) THEN
+
+            zones_mass_in_out(1, 3, ip(n,1) ) =                     &
+                       zones_mass_in_out(1, 3, ip(n,1) ) + p(n,4)   &
+                        + bconc * porosity( oldloc(1), oldloc(2), &
+                          oldloc(3) ) * delv(1) * delv(2) * delv(3) * sat( oldloc(1), oldloc(2), oldloc(3) ) &
+                          * 1000 / part_dens( ip(n,1) )
+                       !   * 1000 / old_number_of_parts( ip(n,1), oldloc(1), &
+       ENDIF
+
+      DO II = 1, numzones 
+
+        IF ( (oldloc(1) .GT. 0 .AND. oldloc(2) .GT. 0 .AND. oldloc(3) .GT. 0 ) &
+         .AND. zone_ind( oldloc(1), oldloc(2), oldloc(3) ) .EQ. &
+          ind_num(II) ) THEN
+
+            zones_mass_in_out(II + 1, 3, ip(n,1) ) =                     &
+                       zones_mass_in_out(II + 1, 3, ip(n,1) ) + p(n,4)   &
+                        + bconc * porosity( oldloc(1), oldloc(2), &
+                          oldloc(3) ) * delv(1) * delv(2) * delv(3) * sat( oldloc(1), oldloc(2), oldloc(3) ) &
+                          * 1000 / part_dens( ip(n,1) )
+         EXIT
+
+        ENDIF
+      ENDDO
+
+      IF ( numzones .EQ. 0 ) THEN
+              RETURN
+      ELSE
+
+        IF( (oldloc(1) .GT. 0 .AND. oldloc(2) .GT. 0 .AND. oldloc(3) .GT. 0 ) &
+             .AND. (currloc(1) .GT. 0 .AND. currloc(2) .GT. 0 .AND.        &
+             currloc(3) .GT. 0 ) ) THEN
+
+             IF ( zone_ind(currloc(1), currloc(2), currloc(3) ) .NE. &
+                  zone_ind(oldloc(1), oldloc(2), oldloc(3) ) ) THEN
+
+
+               DO II = 1, numzones
+
+                  ! entering zone 
+                 IF(  zone_ind(currloc(1), currloc(2), currloc(3) ) .EQ. &
+                      ind_num( II ) ) THEN
+
+                   zones_mass_in_out( II + 1, 1, ip(n,1) ) =             &
+                       zones_mass_in_out( II + 1, 1, ip(n,1) ) +        &
+                       p(n,4) + bconc * porosity( oldloc(1), oldloc(2), &
+                          oldloc(3) ) * delv(1) * delv(2) * delv(3) * sat( oldloc(1), oldloc(2), oldloc(3) ) &
+                          * 1000 / part_dens( ip(n,1) )
+                          !* 1000 / old_number_of_parts( ip(n,1), oldloc(1), &
+                          !   oldloc(2), oldloc(3) )
+                    EXIT
+                 ENDIF
+               ENDDO
+
+               DO II = 1, numzones
+                  ! leaving  zones
+                 IF(  zone_ind(oldloc(1), oldloc(2), oldloc(3) ) .EQ. &
+                      ind_num( II ) ) THEN
+                   zones_mass_in_out( II + 1, 2, ip(n,1) ) =             &
+                       zones_mass_in_out( II + 1, 2, ip(n,1) ) +        &
+                       p(n,4) + bconc * porosity( oldloc(1), oldloc(2), &
+                          oldloc(3) ) * delv(1) * delv(2) * delv(3) * sat( oldloc(1), oldloc(2), oldloc(3) ) &
+                          * 1000 / part_dens( ip(n,1) )
+                          !* 1000 / old_number_of_parts( ip(n,1), oldloc(1), &
+                          !   oldloc(2), oldloc(3) )
+                     EXIT      
+                 ENDIF
+
+               ENDDO
+             ENDIF
+         ELSEIF( (oldloc(1) .GT. 0 .AND. oldloc(2) .GT. 0 .AND.    &
+                      oldloc(3) .GT. 0 ) .AND.                     &
+             (currloc(1) .LE. 0 .OR. currloc(2) .LE. 0 .OR.        &
+             currloc(3) .LE. 0 ) ) THEN
+
+               DO II = 1, numzones
+                  ! leaving  zones
+                 IF(  zone_ind(oldloc(1), oldloc(2), oldloc(3) ) .EQ. &
+                      ind_num( II ) ) THEN
+                   zones_mass_in_out( II + 1, 2, ip(n,1) ) =             &
+                       zones_mass_in_out( II + 1, 2, ip(n,1) ) +        &
+                       p(n,4) + bconc * porosity( oldloc(1), oldloc(2), &
+                          oldloc(3) ) * delv(1) * delv(2) * delv(3) * sat( oldloc(1), oldloc(2), oldloc(3) ) &
+                          * 1000 / part_dens( ip(n,1) )
+                          !* 1000 / old_number_of_parts( ip(n,1), oldloc(1), &
+                          !   oldloc(2), oldloc(3) )
+                    EXIT
+                 ENDIF
+               ENDDO
+
+         ENDIF
+       ENDIF               
+     END SUBROUTINE zones_in_out
+
 END MODULE Particles

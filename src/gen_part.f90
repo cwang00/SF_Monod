@@ -117,6 +117,7 @@ ir = 21
                 particle(part,9) = ic_cat_num(ii,jj,kk)
                 ip(part,1) = constitute_num
                 ip(part,2) = 1
+	        ip(part,6) = -1  
                
                 mass = mass - part_mass
                 !
@@ -134,6 +135,7 @@ ir = 21
                .AND. current_mass .GE. 0 ) THEN
         !remove particles
 
+        write(*,*) 'gen_part: remove particles'
         DO WHILE ( current_mass .GT. mass )
           part = part_numbers( constitute_num, ii, jj, kk)%arr(    &
              number_of_parts( constitute_num, ii, jj, kk ) )
@@ -162,6 +164,7 @@ ir = 21
                .AND. current_mass .LT. 0 ) THEN
         !remove particles
 
+        write(*,*) 'gen_part:2 remove particles'
         DO WHILE ( current_mass .LT. mass )
           part = part_numbers( constitute_num, ii, jj, kk)%arr(    &
              number_of_parts( constitute_num, ii, jj, kk ) )
@@ -214,6 +217,7 @@ ir = 21
                 particle(part,9) = ic_cat_num(ii,jj,kk)
                 ip(part,1) = constitute_num
                 ip(part,2) = 1
+	        ip(part,6) = -1  
                
                 mass = mass - part_mass
                 !
@@ -230,6 +234,7 @@ ir = 21
       ELSE IF ( mass .LT. current_mass .AND. mass .LT. 0   &
                .AND. current_mass .GE. 0 ) THEN
 
+        write(*,*) 'gen_part:3 remove particles'
         DO I = 1, number_of_parts( constitute_num, ii, jj, kk )
           part = part_numbers( constitute_num, ii, jj, kk)%arr( I )
 	  particle(part,1) = -999.0
@@ -264,6 +269,7 @@ ir = 21
                 particle(part,9) = ic_cat_num(ii,jj,kk)
                 ip(part,1) = constitute_num
                 ip(part,2) = 1
+	        ip(part,6) = -1  
                
                 !
                 ! update concentration
@@ -279,6 +285,8 @@ ir = 21
       ELSE IF ( mass .GT. current_mass .AND. mass .GE. 0   &
                .AND. current_mass .LT. 0 ) THEN
 
+        write(*,*) 'gen_part:4 remove particles'
+
         DO I = 1, number_of_parts( constitute_num, ii, jj, kk )
           part = part_numbers( constitute_num, ii, jj, kk)%arr( I )
 	  particle(part,1) = -999.0
@@ -313,6 +321,7 @@ ir = 21
                 particle(part,9) = ic_cat_num(ii,jj,kk)
                 ip(part,1) = constitute_num
                 ip(part,2) = 1
+	        ip(part,6) = -1  
                
                 !
                 ! update concentration

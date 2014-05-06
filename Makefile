@@ -3,6 +3,7 @@ cbin_write.o cbin_write_real8.o  mat_dif_init.o  rand_mod.o  slim_fast.o \
 slim_richards.o  min_react_lu.o  v_calc.o vtk_write.o \
 NTransport.o VGTransport.o Chen1992.o Particles.o svode.o gnuplot_write.o  \
 write_vel_gnuplot.o write_vel_gnuplot_2d.o\
+write_sat_gnuplot_2d.o \
 MacQ1990Transport.o MacQ1990unsat.o gen_part.o ran1.o                      \
 v_calc_const_sat.o zone_indicator_read.o
 
@@ -28,8 +29,8 @@ F90 = pgf90
 #F90 = gfortran
 
 SLIM_r2.0.exe : $(source)
-	$(F90) -O3 -o bin/SLIM.exe $(sources)
-#	$(F90) -g -o bin/SLIM.exe $(sources)
+	$(F90) -g -o bin/SLIM.exe $(sources)
+#	$(F90) -O3 -o bin/SLIM.exe $(sources)
 
 .o : 
 	$(F90) -c src/$(objects)
@@ -38,7 +39,7 @@ SLIM_r2.0.exe : $(source)
 
 .PHONY : clean
 clean : 
-	rm -f bin/SLIM.exe $(objects)
+	rm -f bin/SLIM.exe $(objects) *.mod
 
 debug :
 	$(F90) -gDD -o bin/SLIM.exe $(objects)

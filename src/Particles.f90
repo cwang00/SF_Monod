@@ -133,7 +133,7 @@ MODULE Particles
                   ( pp( n, 7 ) .LE. tnext ) ) THEN
 
            CALL addAndResizePartNumbers(n, ip, ploc(1), ploc(2), ploc(3), &
-                                        part_dens)
+                                        part_dens( ip(n,1) ) )
 
         END IF
 
@@ -157,8 +157,8 @@ MODULE Particles
      SUBROUTINE addAndResizePartNumbers(n, ip, i, j, k, part_dens)
 
        INTEGER*4, DIMENSION(:,:) :: ip
-       INTEGER*4, DIMENSION(:) :: ploc, part_dens
-       INTEGER*4 :: n, i, j, k, m
+       INTEGER*4, DIMENSION(:) :: ploc
+       INTEGER*4 :: n, i, j, k, m, part_dens
        INTEGER, DIMENSION(:), ALLOCATABLE :: temp
 
          number_of_parts( ip(n, 1), i, j, k) =     &
@@ -173,7 +173,7 @@ MODULE Particles
 
               max_number_of_parts( ip(n, 1), i,j,k ) = &
                max_number_of_parts( ip(n, 1), i,j,k ) + &
-                  part_dens( ip(n,1) )
+                  part_dens
             ENDDO
 
               ALLOCATE( temp(                                              &
@@ -207,7 +207,7 @@ MODULE Particles
 
               max_number_of_parts( ip(n, 1), i,j,k ) = &
               max_number_of_parts( ip(n, 1), i,j,k ) + &
-                  part_dens( ip(n,1) )
+                  part_dens
 
             ENDDO
          ENDIF
@@ -415,9 +415,10 @@ MODULE Particles
             ELSE IF( modelname == 'MacQ1990unsat' ) THEN
               CALL MacQ1990unsatReactRateAtCell( conc, i, j, k, REAL(dt_day), rates )
             ELSE IF( modelname == 'MacQ' ) THEN
-              IF ( number_of_parts( 1, i,j,k ) .GT. 0 .AND.    &
-                   number_of_parts( 2, i,j,k ) .GT. 0 .AND.    &
-                   number_of_parts( 3, i,j,k ) .GT. 0 ) THEN
+              IF ( number_of_parts( 1, i,j,k ) .GT. 0 .OR.   &
+                   number_of_parts( 2, i,j,k ) .GT. 0  ) THEN
+!                   .AND. 
+!                   number_of_parts( 3, i,j,k ) .GT. 0 ) ) THEN
                 CALL VODEReactionRatesAtCell(                          &
                       conc, i, j, k, REAL(dt_day), rates )
               ELSE
@@ -476,6 +477,8 @@ MODULE Particles
                rate = rates( l ) + ( conc(l, i, j, k) -                   &
                                conc_before_average(l, i, j, k ) )
 
+             IF ( ABS( rate ) .GE. 0.000000001 ) THEN
+
               mass = rate * delv(1) * delv(2) * delv(3) * 1000.0           &
                         * sat( i,j , k)  * porosity( i,j,k)
 !               IF ( conc( l, i, j, k ) .LT. 0.0 ) conc( l, i, j, k ) = 0.0
@@ -489,7 +492,7 @@ MODULE Particles
               ELSE IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'CO2' ) THEN
                 mass = mass * sat(i,j,k) /                                 & 
                 ( npars%CO2HenryConst * ( 1 - sat( i,j,k) ) + sat(i,j,k) )
-             ELSE IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'O2' ) THEN
+              ELSE IF ( TRIM(npars%SpeciesNames( l) ) .eq. 'O2' ) THEN
                 mass = mass * sat(i,j,k) /                                 & 
                 ( npars%O2HenryConst * ( 1 - sat( i,j,k) ) + sat(i,j,k) )
               ENDIF
@@ -516,9 +519,14 @@ MODULE Particles
 
              ! update concentrations
              conc( l, i, j, k)  = conc(l, i, j, k ) +     &
-                   mass / ( delv(1) * delv(2) * delv(3) * 1000.0           &
-                        * sat( i,j , k)  * porosity( i,j,k) )
+!                   mass / ( delv(1) * delv(2) * delv(3) * 1000.0           &
+!                        * sat( i,j , k)  * porosity( i,j,k) )
+                              + rate
+             IF( conc( l, i, j, k) .LT. 0.0 ) THEN
+                  conc( l, i, j, k) = 0
+             ENDIF
 
+            ENDIF !IF ( ABS( rate ) .GE. 0.00000001 ) THEN
 
            END DO
         ENDIF !IF ( SUM( number_of_parts(1:ns,i,j,k) ) .GT. 0 ) THEN 
@@ -547,7 +555,7 @@ MODULE Particles
 
 !       CALL removeParticles( pp, ip, ipwell, irp, iprp, lastprint, np, &
 !                             npmax, removed, totalremoved )
-    CALL markRemovedParticles( pp, removed, totalremoved )
+!    CALL markRemovedParticles( pp, removed, totalremoved )
 
 
 
@@ -932,7 +940,7 @@ MODULE Particles
        REAL*8, DIMENSION(:,:) :: pp
        INTEGER*4,  DIMENSION(:,:) :: ip
        INTEGER ::  i, j, k, l, part, m, n
-       REAL*4 :: cellMassChange, partMassChange, backgroundmass
+       REAL*4 :: cellMassChange, partMassChange, totalPartMass, backgroundmass
        REAL*8, DIMENSION(3) :: delv
        INTEGER*4 ::  npmax, np, idx
        CHARACTER*20 modelname
@@ -968,11 +976,25 @@ MODULE Particles
 !       ENDIF
 
        IF ( number_of_parts( l, i, j, k) .GT. 0 ) THEN
-           partMassChange = cellMassChange / number_of_parts( l, i, j,k)
+
+           totalPartMass = 0;
            DO m = 1, number_of_parts( l, i, j, k)
             part = part_numbers( l, i, j,k )%arr( m )
-            pp( part, 4 ) = pp( part, 4 ) + partMassChange
+            totalPartMass = totalPartMass + pp( part, 4 )
            ENDDO 
+
+           partMassChange = totalPartMass + cellMassChange
+
+           IF ( partMassChange + backgroundmass .LT. 0 ) THEN
+             partMassChange = - backgroundmass
+           ENDIF
+
+           !redistribute the mass
+           DO m = 1, number_of_parts( l, i, j, k)
+               part = part_numbers( l, i, j,k )%arr( m )
+               pp( part, 4 ) = partMassChange / number_of_parts( l, i, j, k)
+           ENDDO 
+
            IF( partcombine .EQ. 1 .AND.                       &
              number_of_parts( l, I, J, K ) .GT. total_part_dens( l ) ) THEN
                countActualRemoved = 0
@@ -998,12 +1020,15 @@ MODULE Particles
                    countActualRemoved = countActualRemoved + 1
                   ENDIF
 
-                 ENDDO
+               ENDDO
                   number_of_parts( l, I, J, K ) =    &
                       number_of_parts( l, I, J, K ) - countActualRemoved
-               ENDIF
+           ENDIF
        ELSE
-          partMassChange = cellMassChange / total_part_dens( l )
+          partMassChange = cellMassChange 
+          IF ( partMassChange + backgroundmass .LT. 0 ) THEN
+             partMassChange = - backgroundmass
+          ENDIF
           DO m = 1, total_part_dens( l )
 !          partMassChange = cellMassChange / 10
 !          DO m = 1, 10
@@ -1018,7 +1043,7 @@ MODULE Particles
                   pp(idx,1) = ( i - 1 ) * delv( 1 ) + delv( 1 ) * ran1( 0 )
                   pp(idx,2) = ( j - 1 ) * delv( 2 ) + delv( 2 ) * ran1( 0 )
                   pp(idx,3) = ( k - 1 ) * delv( 3 ) + delv( 3 ) * ran1( 0 )
-                  pp(idx,4) = partMassChange
+                  pp(idx,4) = partMassChange / total_part_dens( l )
                   pp(idx,5) = DBLE(idx)
                   pp(idx,7) = timeCellAllSpec( i, j, k, pp, modelname ) 
                   !pp(idx,7) = timeCellAllSpec( i, j, k, pp, np, ip, delv ) 
@@ -1032,7 +1057,8 @@ MODULE Particles
                    STOP
                  ENDIF
 
-           CALL addAndResizePartNumbers(idx, ip, I, J, K, total_part_dens)
+           CALL addAndResizePartNumbers(idx, ip, I, J, K, & 
+                           total_part_dens( ip( idx, 1 ) ) )
 
            ENDDO 
 !        WRITE(*,*)'Warning! -------' 
@@ -2283,6 +2309,7 @@ MODULE Particles
 
      SUBROUTINE zones_in_out(n, p, ip, sat, porosity, part_dens, &
                 oldloc, currloc, delv, zone_ind, numzones, ind_num,        &
+                xtent, ytent, ztent,  tnext,                               &
                 modelname, zones_mass_in_out  )
 
       REAL*8, DIMENSION(:,:) :: p
@@ -2290,13 +2317,15 @@ MODULE Particles
       INTEGER*4, DIMENSION(:) ::  part_dens(:)
       INTEGER*4, DIMENSION(:,:)  :: ip
       CHARACTER (LEN=20) :: modelname
-      INTEGER*4 ::  n, numzones, II
+      INTEGER*4 ::  n, numzones, II, xtent, ytent, ztent
       INTEGER*4, DIMENSION(:) :: oldloc, currloc
       REAL*8, DIMENSION(:) :: delv
       INTEGER*4, DIMENSION(:,:,:) :: zone_ind
       INTEGER*4, DIMENSION(:) :: ind_num
       REAL*4, DIMENSION(:,:,:) :: zones_mass_in_out
       REAL*4 :: bconc
+      REAL*8 :: tnext
+      LOGICAL :: isinbound, isoldinbound
 
       IF ( modelname == 'Chen1992' ) THEN
                   bconc =cpars%backgroundConc(ip(n,1),      &
@@ -2320,13 +2349,36 @@ MODULE Particles
                   stop
       ENDIF
 
+      IF ( ( currloc(1) .GT. 0 .AND. currloc(1) .LE. xtent ) .AND.   &
+           ( currloc(2) .GT. 0 .AND. currloc(2) .LE. ytent ) .AND.   &
+           ( currloc(3) .GT. 0 .AND. currloc(3) .LE. ztent ) .AND.   &
+           ( p(n, 7 ) .LE. tnext ) )  THEN
+
+           isinbound = .TRUE.
+      ELSE
+           isinbound = .FALSE.
+      ENDIF
+
+      IF ( ( oldloc(1) .GT. 0 .AND. oldloc(1) .LE. xtent ) .AND.   &
+           ( oldloc(2) .GT. 0 .AND. oldloc(2) .LE. ytent ) .AND.   &
+           ( oldloc(3) .GT. 0 .AND. oldloc(3) .LE. ztent ) .AND.   &
+           ( p(n, 7 ) .LE. tnext ) )  THEN
+
+           isoldinbound = .TRUE.
+      ELSE
+           isoldinbound = .FALSE.
+      ENDIF
+
          ! entering the whole domain, zone 0 is the whole domain
       IF ( ip(n, 6) .EQ. -1 ) THEN
+        IF(  isoldinbound .AND. &
+               zone_ind(oldloc(1), oldloc(2), oldloc(3) ) .EQ. 0 ) THEN
             zones_mass_in_out(1, 1, ip(n,1) ) =                     &
                        zones_mass_in_out(1, 1, ip(n,1) ) + p(n,4)   &
                         + bconc * porosity( oldloc(1), oldloc(2), &
                           oldloc(3) ) * delv(1) * delv(2) * delv(3) * sat( oldloc(1), oldloc(2), oldloc(3) ) &
                           * 1000 / part_dens( ip(n,1) )
+        ENDIF
 
                DO II = 1, numzones
 
@@ -2345,9 +2397,8 @@ MODULE Particles
       ENDIF 
 
            ! leaving the whole domain, zone 0 is the whole domain
-      IF( (oldloc(1) .GT. 0 .AND. oldloc(2) .GT. 0 .AND. oldloc(3) .GT. 0 ) &
-             .AND. ( p(n,1) .LE. 0.0 .OR. p(n,2) .LE. 0.0 .OR. &
-                      p(n,3) .LE. 0.0 ) ) THEN
+      IF( isoldinbound .AND. ( .NOT. isinbound ) ) THEN
+         IF (  zone_ind( oldloc(1), oldloc(2), oldloc(3) ) .EQ. 0 ) THEN
             zones_mass_in_out(1, 2, ip(n,1) ) =                     &
                        zones_mass_in_out(1, 2, ip(n,1) ) + p(n,4)   &
                         + bconc * porosity( oldloc(1), oldloc(2), &
@@ -2355,10 +2406,11 @@ MODULE Particles
                           * 1000 / part_dens( ip(n,1) )
                        !   * 1000 / old_number_of_parts( ip(n,1), oldloc(1), &
                        !      oldloc(2), oldloc(3) )
+         ENDIF
       ENDIF
 
       !domain storage
-      IF ( (oldloc(1) .GT. 0 .AND. oldloc(2) .GT. 0 .AND. oldloc(3) .GT. 0 ) &
+      IF ( isoldinbound  &
           .AND. zone_ind( oldloc(1), oldloc(2), oldloc(3) ) .EQ. 0 ) THEN
 
             zones_mass_in_out(1, 3, ip(n,1) ) =                     &
@@ -2371,7 +2423,7 @@ MODULE Particles
 
       DO II = 1, numzones 
 
-        IF ( (oldloc(1) .GT. 0 .AND. oldloc(2) .GT. 0 .AND. oldloc(3) .GT. 0 ) &
+        IF ( isoldinbound &
          .AND. zone_ind( oldloc(1), oldloc(2), oldloc(3) ) .EQ. &
           ind_num(II) ) THEN
 
@@ -2385,13 +2437,9 @@ MODULE Particles
         ENDIF
       ENDDO
 
-      IF ( numzones .EQ. 0 ) THEN
-              RETURN
-      ELSE
+      IF ( numzones .GT. 0 ) THEN
 
-        IF( (oldloc(1) .GT. 0 .AND. oldloc(2) .GT. 0 .AND. oldloc(3) .GT. 0 ) &
-             .AND. (currloc(1) .GT. 0 .AND. currloc(2) .GT. 0 .AND.        &
-             currloc(3) .GT. 0 ) ) THEN
+        IF( isoldinbound .AND. ( isinbound ) ) THEN
 
              IF ( zone_ind(currloc(1), currloc(2), currloc(3) ) .NE. &
                   zone_ind(oldloc(1), oldloc(2), oldloc(3) ) ) THEN
@@ -2429,11 +2477,9 @@ MODULE Particles
                  ENDIF
 
                ENDDO
+
              ENDIF
-         ELSEIF( (oldloc(1) .GT. 0 .AND. oldloc(2) .GT. 0 .AND.    &
-                      oldloc(3) .GT. 0 ) .AND.                     &
-             (currloc(1) .LE. 0 .OR. currloc(2) .LE. 0 .OR.        &
-             currloc(3) .LE. 0 ) ) THEN
+         ELSEIF( isoldinbound .AND.( .NOT. isinbound ) ) THEN
 
                DO II = 1, numzones
                   ! leaving  zones

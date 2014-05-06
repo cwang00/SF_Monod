@@ -198,7 +198,8 @@ INTEGER*4   ici(10), nplane,  wellnpart, po(4,4),planeloc, &
      planedir(10), &
  idecsteps, ii, jj, kk, ind_ic_catagory, icat, jcat, kcat, ic_cat_count, &
    kic, n_ic_timesteps, loop2, iic, cell_sink,boundary_cond(3,2),well_r(2,10000,3), &
-        rw_ind(2), n_rw_ind(2), n_rw,imax, total_part_dens(13)
+        rw_ind(2), n_rw_ind(2), n_rw,imax, total_part_dens(13), &
+        icnpart_per_cell_per_specs
 
 
 
@@ -1192,12 +1193,13 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 !    2 cellv*dble(ic_cat_count))/dble(icnpart)
   
  IF( icnpart .GT. 0 ) THEN
+  icnpart_per_cell_per_specs = icnpart/ic_cat_count
   DO kk = 1, kcat
     DO jj = 1, jcat
       DO ii = 1, icat
         IF (ic_cat_num_bg(iic,ii,jj,kk) == ind_ic_catagory) THEN
 ! assign particles to active locations
-          DO  kic = 1, (icnpart/ic_cat_count)
+          DO  kic = 1, icnpart_per_cell_per_specs
             p(n,1) = delv(1)*(ran1(ir)) + DBLE(ii-1)*delv(1) 
             p(n,2) = delv(2)*(ran1(ir)) + DBLE(jj-1)*delv(2) 
             p(n,3) = delv(3)*(ran1(ir)) + DBLE(kk-1)*delv(3) 
@@ -1219,7 +1221,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
                   inbounds = 0
                 END IF
               END DO
-              
+              CALL addAndResizePartNumbers( n, ip, ii,jj, kk,   &
+                                               icnpart_per_cell_per_specs )
               IF (inbounds == 1) THEN
 ! we are adding a fix for unsat retardation
 rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2),ploc(3))
@@ -1235,7 +1238,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
     END DO  !jj
   END DO  !kk
 
-  total_part_dens(iic) = total_part_dens(iic) + icnpart/ic_cat_count
+  total_part_dens(iic) = total_part_dens(iic) + icnpart_per_cell_per_specs
 
  END IF
  END IF ! ic =5
@@ -1326,12 +1329,13 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 !    2 cellv*dble(ic_cat_count))/dble(icnpart)
   
  IF( icnpart .GT. 0 ) THEN
+  icnpart_per_cell_per_specs = icnpart/ic_cat_count
   DO kk = 1, kcat
     DO jj = 1, jcat
       DO ii = 1, icat
         IF (ic_cat_num_bg(iic,ii,jj,kk) == ind_ic_catagory) THEN
 ! assign particles to active locations
-          DO  kic = 1, (icnpart/ic_cat_count)
+          DO  kic = 1, icnpart_per_cell_per_specs
             p(n,1) = delv(1)*(ran1(ir)) + DBLE(ii-1)*delv(1) 
             p(n,2) = delv(2)*(ran1(ir)) + DBLE(jj-1)*delv(2) 
             p(n,3) = delv(3)*(ran1(ir)) + DBLE(kk-1)*delv(3) 
@@ -1354,6 +1358,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
                 END IF
               END DO
               
+              CALL addAndResizePartNumbers( n, ip, ii,jj, kk,   &
+                                               icnpart_per_cell_per_specs )
               IF (inbounds == 1) THEN
 ! we are adding a fix for unsat retardation
 rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2),ploc(3))
@@ -1369,7 +1375,7 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
     END DO  !jj
   END DO  !kk
 
-     total_part_dens(iic) = total_part_dens(iic) + icnpart/ic_cat_count
+     total_part_dens(iic) = total_part_dens(iic) + icnpart_per_cell_per_specs
  END IF
 
  END IF ! ic = 6
@@ -1655,7 +1661,9 @@ WRITE(666,*)
   
  ! print*, C(1,1,1,1)
 
- zones_mass_in_out = 0.0
+ IF ( numzones .GE. 0 ) THEN
+    zones_mass_in_out = 0.0
+ ENDIF
 
 ! mp = np
 !
@@ -3135,7 +3143,8 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
     IF ( numzones .GE. 0 ) THEN
       CALL zones_in_out( n, p, ip, sat, porosity, total_part_dens, &
                         oldploc, ploc, delv, &
-                      zone_ind, numzones, ind_zonenum,  modelname, &
+                      zone_ind, numzones, ind_zonenum,             &
+                      xtent, ytent, ztent, tnext, modelname, &
                      zones_mass_in_out ) 
     ENDIF
 
@@ -3331,8 +3340,8 @@ end if ! part_conc_write
         else if (concprint == 2 ) THEN
               WRITE (dotit,199) it
 
-  CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),it,n_constituents,vtk_file)
-  !CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,vtk_file)
+!  CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),it,n_constituents,vtk_file)
+CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,vtk_file)
       
     END IF   !print concentration
 

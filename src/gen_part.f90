@@ -48,6 +48,19 @@ ir = 21
                mass = mass +  ic_conc( timestep_num, iii ) * delv( 1 ) * delv( 2 ) &
                        * ABS( vel(3, ii,jj,kk) ) * (time_end - time_begin ) &
                          * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) 
+               ELSE IF ( bnd_cnd == 'const_flux_x' ) THEN
+               mass = ic_conc( timestep_num, iii ) * delv( 2 ) * delv( 3 ) &
+                       * ABS( vel(1, ii,jj,kk) ) * (time_end - time_begin ) &
+                         * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) 
+               ELSE IF ( bnd_cnd == 'const_flux_y' ) THEN
+               mass = mass +  ic_conc( timestep_num, iii ) * delv( 1 ) * delv( 3 ) &
+                       * ABS( vel(2, ii,jj,kk) ) * (time_end - time_begin ) &
+                         * 1000 *  porosity( ii,jj,kk ) * sat(ii,jj,kk) 
+
+               ELSE IF ( bnd_cnd == 'const_flux_z' ) THEN
+               mass = mass +  ic_conc( timestep_num, iii ) * delv( 1 ) * delv( 2 ) &
+                       * ABS( vel(3, ii,jj,kk) ) * (time_end - time_begin ) &
+                         * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) 
                ELSE IF ( bnd_cnd == 'const_conc' ) THEN
                  mass = ic_conc( timestep_num, iii )              &
                          * delv( 1 ) * delv( 2 ) * delv( 3 )      &

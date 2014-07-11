@@ -1661,9 +1661,9 @@ WRITE(666,*)
   
  ! print*, C(1,1,1,1)
 
- IF ( numzones .GE. 0 ) THEN
-    zones_mass_in_out = 0.0
- ENDIF
+! IF ( numzones .GE. 0 ) THEN
+!    zones_mass_in_out = 0.0
+! ENDIF
 
 ! mp = np
 !
@@ -3140,13 +3140,13 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
             ploc(l) = IDINT(p(n,l)/delc(l))  + 1
       END DO
 
-    IF ( numzones .GE. 0 ) THEN
-      CALL zones_in_out( n, p, ip, sat, porosity, total_part_dens, &
-                        oldploc, ploc, delv, &
-                      zone_ind, numzones, ind_zonenum,             &
-                      xtent, ytent, ztent, tnext, modelname, &
-                     zones_mass_in_out ) 
-    ENDIF
+!    IF ( numzones .GE. 0 ) THEN
+!      CALL zones_in_out( n, p, ip, sat, porosity, total_part_dens, &
+!                        oldploc, ploc, delv, &
+!                      zone_ind, numzones, ind_zonenum,             &
+!                      xtent, ytent, ztent, tnext, modelname, &
+!                     zones_mass_in_out ) 
+!    ENDIF
 
     CALL countCellPart( n, ploc, p, ip, xtent, ytent, ztent, tnext, &
             total_part_dens )
@@ -3504,24 +3504,24 @@ CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,vtk_file)
 !@RMM
 !print*, iP(1:500,6)
     WRITE(666,*) 'Current number of particles: ', np
-    IF ( numzones .GE. 0 ) THEN
-
-      DO i = 1, numzones + 1
-        IF ( i .EQ. 1 ) THEN
-           WRITE(666,*) 'ZONE: ',  i - 1
-        ELSE
-           WRITE(666,*) 'ZONE: ',  ind_zonenum( i - 1 )
-        ENDIF
-        WRITE(666,*) 'SPECIES                IN(mg)                OUT (mg)' &
-                    // '           storage(mg)'
-        DO j = 1, n_constituents
-          WRITE(666, '(1X, I4, 1X, E15.7, 1X, E15.7, 1X, E15.7)' ) &
-                   j, zones_mass_in_out( i, 1, j ),  &
-                      zones_mass_in_out(i, 2, j ) ,  & 
-                      zones_mass_in_out(i, 3, j )
-        ENDDO
-      ENDDO
-    ENDIF
+!    IF ( numzones .GE. 0 ) THEN
+!
+!      DO i = 1, numzones + 1
+!        IF ( i .EQ. 1 ) THEN
+!           WRITE(666,*) 'ZONE: ',  i - 1
+!        ELSE
+!           WRITE(666,*) 'ZONE: ',  ind_zonenum( i - 1 )
+!        ENDIF
+!        WRITE(666,*) 'SPECIES                IN(mg)                OUT (mg)' &
+!                    // '           storage(mg)'
+!        DO j = 1, n_constituents
+!          WRITE(666, '(1X, I4, 1X, E15.7, 1X, E15.7, 1X, E15.7)' ) &
+!                   j, zones_mass_in_out( i, 1, j ),  &
+!                      zones_mass_in_out(i, 2, j ) ,  & 
+!                      zones_mass_in_out(i, 3, j )
+!        ENDDO
+!      ENDDO
+!    ENDIF
     flush(666)
 
 ! now write out concentration at given time

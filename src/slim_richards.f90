@@ -642,26 +642,26 @@ ENDIF
 
 READ(99,*) numberofzones
 
-IF ( numberofzones .EQ. 0 ) THEN
-     ALLOCATE( zoneindicator_num( 1 ) )
-     ALLOCATE( zones_mass_in_out( 1, 3, n_constituents ) )
-     ALLOCATE( zoneindicator( xtent, ytent, ztent) )
-     zoneindicator = 0
-ELSEIF (numberofzones .GT. 0 ) THEN
-     ALLOCATE( zoneindicator_num( numberofzones ) )
-        DO I = 1, numberofzones
-          read(99,*) zoneindicator_num(I) 
-        ENDDO
-     read(99,*) zoneindicatorfile   
-     ALLOCATE( zoneindicator( xtent, ytent, ztent) )
-
-     ALLOCATE( zones_mass_in_out( numberofzones + 1, 3, n_constituents ) )
-
-     CALL zone_indicator_read( zoneindicatorfile, zoneindicator, &
-                              xtent, ytent, ztent ) 
-ELSE
-
-ENDIF
+!IF ( numberofzones .EQ. 0 ) THEN
+!     ALLOCATE( zoneindicator_num( 1 ) )
+!     ALLOCATE( zones_mass_in_out( 1, 3, n_constituents ) )
+!     ALLOCATE( zoneindicator( xtent, ytent, ztent) )
+!     zoneindicator = 0
+!ELSEIF (numberofzones .GT. 0 ) THEN
+!     ALLOCATE( zoneindicator_num( numberofzones ) )
+!        DO I = 1, numberofzones
+!          read(99,*) zoneindicator_num(I) 
+!        ENDDO
+!     read(99,*) zoneindicatorfile   
+!     ALLOCATE( zoneindicator( xtent, ytent, ztent) )
+!
+!     ALLOCATE( zones_mass_in_out( numberofzones + 1, 3, n_constituents ) )
+!
+!     CALL zone_indicator_read( zoneindicatorfile, zoneindicator, &
+!                              xtent, ytent, ztent ) 
+!ELSE
+!
+!ENDIF
 
 
 

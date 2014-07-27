@@ -1460,12 +1460,6 @@ IF (concprint == 1) THEN
   
 END IF    ! print concentrations?
 
-IF(partprint >= 1) THEN
-     DO  n = 1, np
-       write(113,61) P(n,1), P(n,2), P(n,3), n, P(n,7)
-     END DO
-ENDIF
- 
 ! set time column of mass to zero for initi condition
 
 mass(1,1) = 0.d0
@@ -1645,6 +1639,13 @@ DO iic = 1, n_constituents
 
   END IF ! ic = 6
 END DO  ! DO iiC = 1, n_constituents
+
+IF(partprint >= 1 .AND. it .eq. 1 ) THEN
+     DO  n = 1, np
+       write(113,61) P(n,1), P(n,2), P(n,3), n, P(n,7)
+     END DO
+ENDIF
+ 
 
  CALL forgetCellPart(xtent, ytent, ztent, n_constituents)
 

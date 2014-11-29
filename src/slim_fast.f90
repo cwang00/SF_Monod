@@ -232,7 +232,7 @@ CHARACTER (LEN=100) :: ind_ic_file
 REAL*8 :: vga_const, vgn_const, sres_sat_const, bnd_Xup, bnd_Xdown,    &
                                                 bnd_Yup, bnd_Ydown,    &
                                                 bnd_Zup, bnd_Zdown
-REAL*8 :: oldloc(3), origloc(3)
+REAL*8 :: oldloc(3), origloc(3), disperoldloc(3)
 INTEGER*4 :: Xup_Ref, Xdown_Ref, Yup_Ref, Ydown_Ref, Zup_Ref, Zdown_Ref,    &
             use_pf_mask
 CHARACTER (LEN=20) :: modelname, bndcnd
@@ -390,6 +390,9 @@ END SUBROUTINE gen_part
 REAL*8  FUNCTION ran1(idum)
 INTEGER*4 :: idum
 END FUNCTION ran1
+
+
+
 
 end interface
 
@@ -2884,6 +2887,9 @@ end if
           ddz = z(6) * DSQRT(moldiff*2.0D0*tad(4)) *dble(iP(n,2))
           
          
+          disperoldloc(1) = p(n,1)
+          disperoldloc(2) = p(n,2)
+          disperoldloc(3) = p(n,3)
 ! we are adding a fix for unsat retardation
 rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2),ploc(3)) 
           p(n,1) = p(n,1) + (dxx+dxy+dxz)*tad(4)*dble(iP(n,2)) + dx*DSQRT(tad(4))*dble(iP(n,2)) + ddx/Rstar
@@ -2898,7 +2904,10 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 !          p(n,2) = p(n,2) + (1.0D0/Porosity(ploc(1),ploc(2),ploc(3)))*(grad_phi_y)*tad(4)*dble(iP(n,2)) 
 !          p(n,3) = p(n,3) + (1.0D0/Porosity(ploc(1),ploc(2),ploc(3)))*(grad_phi_z)*tad(4)*dble(iP(n,2)) 
 
+
         END IF
+
+!     call the the reflection algorithm by Lim(2006)
 
 !       ! reflection algorithm
 !       IF( p(n,3) > 4.3 ) THEN
@@ -2921,6 +2930,9 @@ rstar = 1.d0 + (Rtard(ip(n,1),ploc(1),ploc(2),ploc(3))-1.d0)/sat(ploc(1),ploc(2)
 !         p(n, 3) = oldloc(3)
 !      END IF
 !    END IF
+
+        CALL Reflection_barrier_method( n, p, al, at, sat, porosity, &
+                      oldloc, delv, v, moldiff, xtent, ytent, ztent, ir )
 
        IF ( Zup_Ref .EQ. 1 ) THEN
          IF( p(n, 3) >  bnd_Zup ) p(n,3) = bnd_Zup - ( p(n,3) - bnd_Zup ) 
@@ -3341,8 +3353,8 @@ end if ! part_conc_write
         else if (concprint == 2 ) THEN
               WRITE (dotit,199) it
 
-!  CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),it,n_constituents,vtk_file)
-CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,vtk_file)
+  CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),it,n_constituents,vtk_file)
+!CALL gnuplot_write(c(:,:,:,:),xtent, ytent,ztent,it,n_constituents,vtk_file)
       
     END IF   !print concentration
 

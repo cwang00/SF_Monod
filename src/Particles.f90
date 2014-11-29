@@ -2500,4 +2500,228 @@ MODULE Particles
        ENDIF               
      END SUBROUTINE zones_in_out
 
+     ! implements the reflection algorithm by Lim (2006) in
+     ! Bechtold, Vanderborght, Ippisch and Vereecken, 2011,
+     ! Efficient random walk particle tracking algorithm for
+     ! advective-dispersive transport in media with discontinuous dispersion
+     ! coefficients and water contents, water resources research, VOL 47, 
+     ! W10526
+
+     SUBROUTINE Reflection_barrier_method(n, p, al, at, sat, porosity, &
+                oldloc, delv, vel, moldiff,       &
+                xtent, ytent, ztent, seed )
+
+      REAL*8, DIMENSION(:,:) :: p
+      REAL*8, DIMENSION(:,:,:) :: porosity, sat
+      INTEGER*4, DIMENSION(:,:)  :: ip
+      INTEGER*4 ::  n, xtent, ytent, ztent, seed, loc, inc, lobd, upbd
+      REAL*8, DIMENSION(:) :: oldloc
+      REAL*8, DIMENSION(:) :: delv
+      REAL*8, DIMENSION(:,:,:,:) :: vel
+      REAL*8 :: al, at, moldiff, p1, D1, D2, theta1, theta2, prob
+      INTEGER*4, DIMENSION(:) :: plocnew(3), plocold(3)
+
+      plocold(1) = IDINT(oldloc(1) /delv(1)) + 1
+      plocold(2) = IDINT(oldloc(2) /delv(2)) + 1
+      plocold(3) = IDINT(oldloc(3) /delv(3)) + 1
+      plocnew(1) = IDINT(p(n,1) /delv(1)) + 1
+      plocnew(2) = IDINT(p(n,2) /delv(2)) + 1
+      plocnew(3) = IDINT(p(n,3) /delv(2)) + 1
+
+      IF( plocnew(1) > xtent .OR. plocnew( 1 ) < 1 ) THEN
+              return
+      ENDIF
+
+      IF( plocnew(2) > ytent .OR. plocnew( 2 ) < 1 ) THEN
+              return
+      ENDIF
+
+      IF( plocnew(3) > ztent .OR. plocnew( 3 ) < 1 ) THEN
+              return
+      ENDIF
+
+      IF ( plocold(1) == plocnew(1) .AND. plocold(2) == plocnew(2) .AND. &
+           plocold(3) == plocnew(3) ) THEN
+           return
+      ENDIF
+
+      IF ( plocold(1) .NE. plocnew(1) ) THEN
+       
+        IF( plocold(1) .LT. plocnew(1) ) THEN
+               inc = 1
+        ELSE
+               inc = -1
+        ENDIF
+
+        lobd = plocold(1)
+        upbd = plocnew(1)
+        DO loc = lobd, upbd - inc, inc         
+           theta1 = porosity( loc,  plocold(2), plocold(3) )*      &
+               sat( loc,  plocold(2), plocold(3) )
+
+           theta2 = porosity( loc + inc,  plocnew(2), plocnew(3) )*      &
+               sat( loc + inc,  plocnew(2), plocnew(3) )
+
+
+           D1 = at * sqrt( vel(1, loc, plocold(2), plocold(3)) **2 +     &
+                        vel(2, loc, plocold(2), plocold(3)) **2 +     &
+                        vel(3, loc, plocold(2), plocold(3)) **2 ) +   &
+            (al - at) * vel(1, loc, plocold(2), plocold(3))
+!            (al - at) * vel(1, loc, plocold(3)) ** 2 /     &
+!                  sqrt( vel(1, loc, plocold(2), plocold(3)) **2 +     &
+!                        vel(2, loc, plocold(2), plocold(3)) **2 +     &
+!                        vel(3, loc, plocold(2), plocold(3)) **2 )
+!             
+           D2 = at * sqrt( vel(1, loc + inc, plocnew(2), plocnew(3)) **2 +     &
+                        vel(2, loc + inc, plocnew(2), plocnew(3)) **2 +     &
+                   vel(3, loc + inc, plocnew(2), plocnew(3)) **2 ) +        &
+            (al - at) * vel(1, loc + inc, plocnew(2), plocnew(3))
+!            (al - at) * vel(1, loc + inc, plocnew(2), plocnew(3)) ** 2 /    &
+!                  sqrt( vel(1, loc + inc, plocnew(2), plocnew(3)) **2 +     &
+!                        vel(2, loc + inc, plocnew(2), plocnew(3)) **2 +     &
+!                        vel(3, loc + inc, plocnew(2), plocnew(3)) **2 ) 
+!      
+    !    p1 =  theta1 * sqrt( D1) / ( theta1 * sqrt(D1) + theta2 * sqrt(D2) ) 
+           p1 =  theta2 * sqrt( D2) / ( theta1 * sqrt(D1) ) 
+
+           CALL RANDOM_SEED(seed)
+           CALL RANDOM_NUMBER(prob)
+           IF ( p1 .LT. 1.0 ) THEN
+            ! not pass 
+            IF (  prob <= 1 - p1 ) THEN
+              p(n, 1) =  ( loc - 1 ) * delv(1) + prob * delv(1)
+!            WRITE(*,*) "not pass at X direction!"
+            ELSE
+            ! pass
+            ! use the new location
+!          WRITE(*,*) "passed at X direction!"
+            ENDIF
+           ENDIF
+        
+          ENDDO
+       ENDIF
+
+      IF ( plocold(2) .NE. plocnew(2) ) THEN
+
+        IF( plocold(2) .LT. plocnew(2) ) THEN
+               inc = 1
+        ELSE
+               inc = -1
+        ENDIF
+
+        lobd = plocold(2)
+        upbd = plocnew(2)
+        DO loc = lobd, upbd - inc, inc         
+
+           theta1 = porosity( plocold(1),  loc, plocold(3) )*      &
+               sat( plocold(1),  loc, plocold(3) )
+
+           theta2 = porosity( plocold(1),  loc + inc, plocnew(3) )*      &
+               sat( plocold(1),  loc + inc, plocnew(3) )
+
+
+          D1 = at * sqrt( vel(1, plocold(1), loc, plocold(3)) **2 +     &
+                        vel(2, plocold(1), loc, plocold(3)) **2 +     &
+                        vel(3, plocold(1), loc, plocold(3)) **2 ) +      &
+            (al - at) * vel(2, plocold(1), loc, plocold(3))
+!            (al - at) * vel(2, plocold(1), plocold(2), plocold(3)) ** 2 /     &
+!                  sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
+!                        vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
+!                        vel(3, plocold(1), plocold(2), plocold(3)) **2 )
+             
+          D2 = at * sqrt( vel(1, plocnew(1), loc + inc, plocnew(3)) **2 +     &
+                        vel(2, plocnew(1), loc + inc, plocnew(3)) **2 +     &
+                   vel(3, plocnew(1), loc + inc, plocnew(3)) **2 ) +        &
+            (al - at) * vel(2, plocnew(1), loc + inc, plocnew(3))
+!            (al - at) * vel(2, plocnew(1), plocnew(2), plocnew(3)) ** 2 /    &
+!                  sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
+!                        vel(2, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
+!                        vel(3, plocnew(1), plocnew(2), plocnew(3)) **2 ) 
+      
+   !      p1 =  theta1 * sqrt( D1) / ( theta1 * sqrt(D1) + theta2 * sqrt(D2) ) 
+          p1 =  theta2 * sqrt( D2) / ( theta1 * sqrt(D1) ) 
+
+        CALL RANDOM_SEED(seed)
+        CALL RANDOM_NUMBER(prob)
+        IF ( p1 .LT. 1.0 ) THEN
+          ! not pass 
+          IF (  prob <= 1 - p1 ) THEN
+             p(n, 2) = (loc - 1 ) * delv(2)  + prob * delv(2)
+!            WRITE(*,*) "not pass at X direction!"
+          ELSE
+           ! pass
+          ! use the new location
+!          WRITE(*,*) "passed at X direction!"
+          ENDIF
+         ENDIF
+
+       ENDDO
+
+       ENDIF
+
+      IF ( plocold(3) .NE. plocnew(3) ) THEN
+
+        IF( plocold(3) .LT. plocnew(3) ) THEN
+               inc = 1
+        ELSE
+               inc = -1
+        ENDIF
+
+        lobd = plocold(3)
+        upbd = plocnew(3)
+
+        DO loc = lobd, upbd - inc, inc         
+
+           theta1 = porosity( plocold(1),  plocold(2), loc )*      &
+               sat( plocold(1),  plocold(2), loc )
+
+           theta2 = porosity( plocold(1),  plocnew(3), loc + inc )*      &
+               sat( plocold(1),  plocnew(3), loc + inc )
+
+        D1 = at * sqrt( vel(1, plocold(1), plocold(2), loc) **2 +     &
+                        vel(2, plocold(1), plocold(2), loc) **2 +     &
+                        vel(3, plocold(1), plocold(2), loc) **2 ) +   &
+            (al - at) * vel(3, plocold(1), plocold(2), loc)
+!            (al - at) * vel(3, plocold(1), plocold(2), plocold(3)) **2 /     &
+!                  sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
+!                        vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
+!                        vel(3, plocold(1), plocold(2), plocold(3)) **2 )
+             
+        D2 = at * sqrt( vel(1, plocnew(1), plocnew(2), loc + inc ) **2 +     &
+                        vel(2, plocnew(1), plocnew(2), loc + inc ) **2 +     &
+                   vel(3, plocnew(1), plocnew(2), loc + inc ) **2 ) +        &
+            (al - at) * vel(3, plocnew(1), plocnew(2), loc + inc )
+!            (al - at) * vel(3, plocnew(1), plocnew(2), plocnew(3)) ** 2 /     &
+!                  sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
+!                        vel(2, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
+!                        vel(3, plocnew(1), plocnew(2), plocnew(3)) **2 ) 
+      
+       ! p1 =  theta1 * sqrt( D1) / ( theta1 * sqrt(D1) + theta2 * sqrt(D2) ) 
+        p1 =  theta2 * sqrt( D2) / ( theta1 * sqrt(D1) ) 
+
+!       IF ( p1 < 0.5 ) THEN
+!        WRITE(*,*) "p1 = ", p1, "x = ", plocold(1), "y= ", plocold(2), &
+!                   "z = ", plocold(3)
+!        WRITE(*,*) "new ploc: ", "x = ", plocnew(1), "y= ", plocnew(2), &
+!                   "z = ", plocnew(3)
+!       ENDIF
+
+        CALL RANDOM_SEED(seed)
+        CALL RANDOM_NUMBER(prob)
+        IF ( p1 .LT. 1.0 ) THEN
+          ! not pass 
+          IF (  prob <= 1 - p1 ) THEN
+             p(n, 3) = ( loc - 1 ) * delv(3) + prob*delv(3)
+!            WRITE(*,*) "not pass at X direction!"
+          ELSE
+           ! pass
+          ! use the new location
+!          WRITE(*,*) "passed at X direction!"
+          ENDIF
+        ENDIF
+
+       ENDDO
+      ENDIF
+
+     END SUBROUTINE Reflection_barrier_method 
 END MODULE Particles

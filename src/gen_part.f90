@@ -80,14 +80,14 @@ ir = 21
 !                    * delv( 1 ) * delv( 2 ) * delv( 3 ) &
 !                         * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) 
               !remove existing particles
-              IF( number_of_parts(iii, ii,jj,kk) .GT. 0 ) THEN
-                DO I = 1, number_of_parts(constitute_num, ii,jj,kk) 
-                  totalremoved = totalremoved + 1
-                  removed( totalremoved ) = &
-                        part_numbers( constitute_num, ii,jj,kk )%arr(I)
-                ENDDO
-                number_of_parts(constitute_num, ii,jj,kk) = 0
-              ENDIF
+!              IF( number_of_parts(iii, ii,jj,kk) .GT. 0 ) THEN
+!                DO I = 1, number_of_parts(constitute_num, ii,jj,kk) 
+!                  totalremoved = totalremoved + 1
+!                  removed( totalremoved ) = &
+!                        part_numbers( constitute_num, ii,jj,kk )%arr(I)
+!                ENDDO
+!                number_of_parts(constitute_num, ii,jj,kk) = 0
+!              ENDIF
 
 ! assign particles to active locations
 ! check to see if mass of ic > 0
@@ -118,14 +118,18 @@ ir = 21
 	        ip(part,6) = -1  
                
                 !mass = mass - part_mass
+              END DO  !DO I = 1, ic_part_dens
+              
                 !
                 ! update concentration
                 !
-                current_conc( constitute_num, ii, jj, kk ) =              &
-                           ic_conc( timestep_num, iii ) 
-              END DO  !DO I = 1, ic_part_dens
-              
-              number_of_parts(constitute_num, ii,jj,kk) = ic_part_dens(iii)
+                current_conc( constitute_num, ii, jj, kk ) =        &
+                     current_conc( constitute_num, ii, jj, kk )  +      &
+                           ic_conc( timestep_num, iii ) * 1000
+
+                number_of_parts(constitute_num, ii,jj,kk) =      &
+                   number_of_parts(constitute_num, ii,jj,kk) +      &
+                     ic_part_dens(iii)
             END IF  ! IF ( ABS( mass ) .GT. 0.00000000001 ) THEN
 
            ENDIF  !IF (ic_cat_num(ii,jj,kk) == ic_cats(iii)) THEN

@@ -2500,7 +2500,7 @@ MODULE Particles
        ENDIF               
      END SUBROUTINE zones_in_out
 
-     ! implements the reflection algorithm by Lim (2006) in
+     ! implements the reflection algorithm by 
      ! Bechtold, Vanderborght, Ippisch and Vereecken, 2011,
      ! Efficient random walk particle tracking algorithm for
      ! advective-dispersive transport in media with discontinuous dispersion
@@ -2520,6 +2520,11 @@ MODULE Particles
       REAL*8, DIMENSION(:,:,:,:) :: vel
       REAL*8 :: al, at, moldiff, p1, D1, D2, theta1, theta2, prob
       INTEGER*4, DIMENSION(:) :: plocnew(3), plocold(3)
+      LOGICAL xpassed, ypassed, zpassed
+
+      xpassed = .false.
+      ypassed = .false.
+      zpassed = .false.
 
       plocold(1) = IDINT(oldloc(1) /delv(1)) + 1
       plocold(2) = IDINT(oldloc(2) /delv(2)) + 1
@@ -2545,6 +2550,14 @@ MODULE Particles
            return
       ENDIF
 
+      !if porosity is the same ( the same layer), do not apply this 
+      ! algorithm
+      IF ( porosity( plocold(1),  plocold(2), plocold(3) ) -   &
+           porosity( plocnew(1),  plocnew(2), plocnew(3) )     &
+           .LT. 0.0000000001 ) THEN
+           return
+      ENDIF
+
       IF ( plocold(1) .NE. plocnew(1) ) THEN
        
         IF( plocold(1) .LT. plocnew(1) ) THEN
@@ -2555,27 +2568,27 @@ MODULE Particles
 
         lobd = plocold(1)
         upbd = plocnew(1)
-        DO loc = lobd, upbd - inc, inc         
-           theta1 = porosity( loc,  plocold(2), plocold(3) )*      &
-               sat( loc,  plocold(2), plocold(3) )
+!        DO loc = lobd, upbd - inc, inc         
+           theta1 = porosity( plocold(1),  plocold(2), plocold(3) )*      &
+               sat( plocold(1),  plocold(2), plocold(3) )
 
-           theta2 = porosity( loc + inc,  plocnew(2), plocnew(3) )*      &
-               sat( loc + inc,  plocnew(2), plocnew(3) )
+           theta2 = porosity( plocnew(1),  plocnew(2), plocnew(3) )*      &
+               sat( plocnew(1),  plocnew(2), plocnew(3) )
 
 
-           D1 = at * sqrt( vel(1, loc, plocold(2), plocold(3)) **2 +     &
-                        vel(2, loc, plocold(2), plocold(3)) **2 +     &
-                        vel(3, loc, plocold(2), plocold(3)) **2 ) +   &
-            (al - at) * vel(1, loc, plocold(2), plocold(3))
+           D1 = at * sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
+                        vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
+                        vel(3, plocold(1), plocold(2), plocold(3)) **2 ) +   &
+            (al - at) * vel(1, plocold(1), plocold(2), plocold(3))
 !            (al - at) * vel(1, loc, plocold(3)) ** 2 /     &
 !                  sqrt( vel(1, loc, plocold(2), plocold(3)) **2 +     &
 !                        vel(2, loc, plocold(2), plocold(3)) **2 +     &
 !                        vel(3, loc, plocold(2), plocold(3)) **2 )
 !             
-           D2 = at * sqrt( vel(1, loc + inc, plocnew(2), plocnew(3)) **2 +     &
-                        vel(2, loc + inc, plocnew(2), plocnew(3)) **2 +     &
-                   vel(3, loc + inc, plocnew(2), plocnew(3)) **2 ) +        &
-            (al - at) * vel(1, loc + inc, plocnew(2), plocnew(3))
+           D2 = at * sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
+                        vel(2, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
+                   vel(3, plocnew(1), plocnew(2), plocnew(3)) **2 ) +        &
+            (al - at) * vel(1, plocnew(1), plocnew(2), plocnew(3))
 !            (al - at) * vel(1, loc + inc, plocnew(2), plocnew(3)) ** 2 /    &
 !                  sqrt( vel(1, loc + inc, plocnew(2), plocnew(3)) **2 +     &
 !                        vel(2, loc + inc, plocnew(2), plocnew(3)) **2 +     &
@@ -2589,16 +2602,18 @@ MODULE Particles
            IF ( p1 .LT. 1.0 ) THEN
             ! not pass 
             IF (  prob <= 1 - p1 ) THEN
-              p(n, 1) =  ( loc - 1 ) * delv(1) + prob * delv(1)
+!              p(n, 1) =  ( loc - 1 ) * delv(1) + prob * delv(1)
+              p(n, 1) = oldloc(1) 
 !            WRITE(*,*) "not pass at X direction!"
             ELSE
             ! pass
             ! use the new location
+              xpassed = .true.
 !          WRITE(*,*) "passed at X direction!"
             ENDIF
            ENDIF
         
-          ENDDO
+!          ENDDO
        ENDIF
 
       IF ( plocold(2) .NE. plocnew(2) ) THEN
@@ -2611,28 +2626,28 @@ MODULE Particles
 
         lobd = plocold(2)
         upbd = plocnew(2)
-        DO loc = lobd, upbd - inc, inc         
+!        DO loc = lobd, upbd - inc, inc         
 
-           theta1 = porosity( plocold(1),  loc, plocold(3) )*      &
-               sat( plocold(1),  loc, plocold(3) )
+           theta1 = porosity( plocold(1),  plocold(2), plocold(3) )*      &
+               sat( plocold(1),  plocold(2), plocold(3) )
 
-           theta2 = porosity( plocold(1),  loc + inc, plocnew(3) )*      &
-               sat( plocold(1),  loc + inc, plocnew(3) )
+           theta2 = porosity( plocnew(1),  plocnew(2), plocnew(3) )*      &
+               sat( plocnew(1),  plocnew(2), plocnew(3) )
 
 
-          D1 = at * sqrt( vel(1, plocold(1), loc, plocold(3)) **2 +     &
-                        vel(2, plocold(1), loc, plocold(3)) **2 +     &
-                        vel(3, plocold(1), loc, plocold(3)) **2 ) +      &
-            (al - at) * vel(2, plocold(1), loc, plocold(3))
+          D1 = at * sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
+                        vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
+                        vel(3, plocold(1), plocold(2), plocold(3)) **2 ) +      &
+            (al - at) * vel(2, plocold(1), plocold(2), plocold(3))
 !            (al - at) * vel(2, plocold(1), plocold(2), plocold(3)) ** 2 /     &
 !                  sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
 !                        vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
 !                        vel(3, plocold(1), plocold(2), plocold(3)) **2 )
              
-          D2 = at * sqrt( vel(1, plocnew(1), loc + inc, plocnew(3)) **2 +     &
-                        vel(2, plocnew(1), loc + inc, plocnew(3)) **2 +     &
-                   vel(3, plocnew(1), loc + inc, plocnew(3)) **2 ) +        &
-            (al - at) * vel(2, plocnew(1), loc + inc, plocnew(3))
+          D2 = at * sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
+                        vel(2, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
+                   vel(3, plocnew(1), plocnew(2), plocnew(3)) **2 ) +        &
+            (al - at) * vel(2, plocnew(1), plocnew(2), plocnew(3))
 !            (al - at) * vel(2, plocnew(1), plocnew(2), plocnew(3)) ** 2 /    &
 !                  sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
 !                        vel(2, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
@@ -2646,16 +2661,18 @@ MODULE Particles
         IF ( p1 .LT. 1.0 ) THEN
           ! not pass 
           IF (  prob <= 1 - p1 ) THEN
-             p(n, 2) = (loc - 1 ) * delv(2)  + prob * delv(2)
+             !p(n, 2) = (loc - 1 ) * delv(2)  + prob * delv(2)
+             p(n, 2) = oldloc(2)
 !            WRITE(*,*) "not pass at X direction!"
           ELSE
            ! pass
           ! use the new location
+              ypassed = .true.
 !          WRITE(*,*) "passed at X direction!"
           ENDIF
          ENDIF
 
-       ENDDO
+!       ENDDO
 
        ENDIF
 
@@ -2670,27 +2687,27 @@ MODULE Particles
         lobd = plocold(3)
         upbd = plocnew(3)
 
-        DO loc = lobd, upbd - inc, inc         
+!        DO loc = lobd, upbd - inc, inc         
 
-           theta1 = porosity( plocold(1),  plocold(2), loc )*      &
-               sat( plocold(1),  plocold(2), loc )
+           theta1 = porosity( plocold(1),  plocold(2), plocold(3) )*      &
+               sat( plocold(1),  plocold(2), plocold(3) )
 
-           theta2 = porosity( plocold(1),  plocnew(3), loc + inc )*      &
-               sat( plocold(1),  plocnew(3), loc + inc )
+           theta2 = porosity( plocnew(1),  plocnew(2), plocnew(3) )*      &
+               sat( plocnew(1),  plocnew(2), plocnew(3) )
 
-        D1 = at * sqrt( vel(1, plocold(1), plocold(2), loc) **2 +     &
-                        vel(2, plocold(1), plocold(2), loc) **2 +     &
-                        vel(3, plocold(1), plocold(2), loc) **2 ) +   &
-            (al - at) * vel(3, plocold(1), plocold(2), loc)
+        D1 = at * sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
+                        vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
+                        vel(3, plocold(1), plocold(2), plocold(3)) **2 ) +   &
+            (al - at) * vel(3, plocold(1), plocold(2), plocold(3))
 !            (al - at) * vel(3, plocold(1), plocold(2), plocold(3)) **2 /     &
 !                  sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
 !                        vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
 !                        vel(3, plocold(1), plocold(2), plocold(3)) **2 )
              
-        D2 = at * sqrt( vel(1, plocnew(1), plocnew(2), loc + inc ) **2 +     &
-                        vel(2, plocnew(1), plocnew(2), loc + inc ) **2 +     &
-                   vel(3, plocnew(1), plocnew(2), loc + inc ) **2 ) +        &
-            (al - at) * vel(3, plocnew(1), plocnew(2), loc + inc )
+        D2 = at * sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3) ) **2 +     &
+                        vel(2, plocnew(1), plocnew(2), plocnew(3) ) **2 +     &
+                   vel(3, plocnew(1), plocnew(2), plocnew(3) ) **2 ) +        &
+            (al - at) * vel(3, plocnew(1), plocnew(2), plocnew(3) )
 !            (al - at) * vel(3, plocnew(1), plocnew(2), plocnew(3)) ** 2 /     &
 !                  sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
 !                        vel(2, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
@@ -2711,17 +2728,43 @@ MODULE Particles
         IF ( p1 .LT. 1.0 ) THEN
           ! not pass 
           IF (  prob <= 1 - p1 ) THEN
-             p(n, 3) = ( loc - 1 ) * delv(3) + prob*delv(3)
+            ! p(n, 3) = ( loc - 1 ) * delv(3) + prob*delv(3)
+             p(n, 3) = oldloc(3)
 !            WRITE(*,*) "not pass at X direction!"
           ELSE
            ! pass
           ! use the new location
+              zpassed = .true.
 !          WRITE(*,*) "passed at X direction!"
           ENDIF
         ENDIF
 
-       ENDDO
+!       ENDDO
       ENDIF
+
+!      ! adjust the particle mass according to the porosity
+!      IF ( .NOT. xpassed ) THEN
+!        plocnew(1) = plocold(1) 
+!      ENDIF
+!
+!      IF ( .NOT. ypassed ) THEN
+!        plocnew(2) = plocold(2) 
+!      ENDIF
+!
+!      IF ( .NOT. zpassed ) THEN
+!        plocnew(3) = plocold(3) 
+!      ENDIF
+!
+!      IF( xpassed .OR. ypassed .OR. zpassed ) THEN
+!        theta2 =  porosity( plocnew(1),  plocnew(2), plocnew(3) )     &
+!                  * sat( plocnew(1),  plocnew(2), plocnew(3) )
+!        theta1 =  porosity( plocold(1),  plocold(2), plocold(3) )     &
+!                  * sat( plocold(1),  plocold(2), plocold(3) )
+!
+!        IF ( ( theta2 - theta1 ) .GT. 0.000000001 ) THEN
+!          p( n, 4 ) = p( n, 4 ) * ( theta2 / theta1 )
+!        ENDIF
+!      ENDIF
 
      END SUBROUTINE Reflection_barrier_method 
 END MODULE Particles

@@ -157,7 +157,7 @@ MODULE Particles
      SUBROUTINE addAndResizePartNumbers(n, ip, i, j, k, part_dens)
 
        INTEGER*4, DIMENSION(:,:) :: ip
-       INTEGER*4, DIMENSION(:) :: ploc
+     !  INTEGER*4, DIMENSION(:) :: ploc
        INTEGER*4 :: n, i, j, k, m, part_dens
        INTEGER, DIMENSION(:), ALLOCATABLE :: temp
 
@@ -2550,11 +2550,17 @@ MODULE Particles
            return
       ENDIF
 
-      !if porosity is the same ( the same layer), do not apply this 
+      !if porosity is the same ( the same layer), or new is greater
+      ! than the old one, do not apply this 
       ! algorithm
-      IF ( porosity( plocold(1),  plocold(2), plocold(3) ) -   &
+!      IF ( porosity( plocold(1),  plocold(2), plocold(3) ) -   &
+!           porosity( plocnew(1),  plocnew(2), plocnew(3) )     &
+!           .LT. 0.0000000001 ) THEN
+      IF ( ( porosity( plocold(1),  plocold(2), plocold(3) ) .LE.   &
+           porosity( plocnew(1),  plocnew(2), plocnew(3) ) ) .OR.   &
+           ( porosity( plocold(1),  plocold(2), plocold(3) ) -   &
            porosity( plocnew(1),  plocnew(2), plocnew(3) )     &
-           .LT. 0.0000000001 ) THEN
+           .LT. 0.0000000001 ) ) THEN
            return
       ENDIF
 
@@ -2579,7 +2585,8 @@ MODULE Particles
            D1 = at * sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
                         vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
                         vel(3, plocold(1), plocold(2), plocold(3)) **2 ) +   &
-            (al - at) * vel(1, plocold(1), plocold(2), plocold(3))
+            (al - at) * DABS( vel(1, plocold(1), plocold(2), plocold(3)))    &
+             + moldiff
 !            (al - at) * vel(1, loc, plocold(3)) ** 2 /     &
 !                  sqrt( vel(1, loc, plocold(2), plocold(3)) **2 +     &
 !                        vel(2, loc, plocold(2), plocold(3)) **2 +     &
@@ -2588,17 +2595,28 @@ MODULE Particles
            D2 = at * sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
                         vel(2, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
                    vel(3, plocnew(1), plocnew(2), plocnew(3)) **2 ) +        &
-            (al - at) * vel(1, plocnew(1), plocnew(2), plocnew(3))
+            (al - at) * DABS( vel(1, plocnew(1), plocnew(2), plocnew(3)) ) &
+            + moldiff
 !            (al - at) * vel(1, loc + inc, plocnew(2), plocnew(3)) ** 2 /    &
 !                  sqrt( vel(1, loc + inc, plocnew(2), plocnew(3)) **2 +     &
 !                        vel(2, loc + inc, plocnew(2), plocnew(3)) **2 +     &
 !                        vel(3, loc + inc, plocnew(2), plocnew(3)) **2 ) 
 !      
     !    p1 =  theta1 * sqrt( D1) / ( theta1 * sqrt(D1) + theta2 * sqrt(D2) ) 
-           p1 =  theta2 * sqrt( D2) / ( theta1 * sqrt(D1) ) 
+          p1 =  theta2 * sqrt( D2) / ( theta1 * sqrt(D1) ) 
+     !      p1 =  theta2 * sqrt(DABS( D2)) / ( theta1 * sqrt(DABS(D1)) ) 
 
            CALL RANDOM_SEED(seed)
            CALL RANDOM_NUMBER(prob)
+
+!           IF( plocold(1) .EQ. 39 .AND. plocold(2) .EQ. 21 .AND. &
+!               plocold(3) .EQ. 20 ) THEN
+!            WRITE( *, *) 'X direction!'     
+!            WRITE( *, *) 'theta1 =' , theta1, theta2    
+!            WRITE( *, *) 'D1 =' , D1, D2    
+!            WRITE( *, *) 'p1/prob =' , p1, prob    
+!           ENDIF
+
            IF ( p1 .LT. 1.0 ) THEN
             ! not pass 
             IF (  prob <= 1 - p1 ) THEN
@@ -2638,7 +2656,8 @@ MODULE Particles
           D1 = at * sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
                         vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
                         vel(3, plocold(1), plocold(2), plocold(3)) **2 ) +      &
-            (al - at) * vel(2, plocold(1), plocold(2), plocold(3))
+            (al - at) * DABS(vel(2, plocold(1), plocold(2), plocold(3))) &
+             + moldiff
 !            (al - at) * vel(2, plocold(1), plocold(2), plocold(3)) ** 2 /     &
 !                  sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
 !                        vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
@@ -2647,7 +2666,8 @@ MODULE Particles
           D2 = at * sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
                         vel(2, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
                    vel(3, plocnew(1), plocnew(2), plocnew(3)) **2 ) +        &
-            (al - at) * vel(2, plocnew(1), plocnew(2), plocnew(3))
+            (al - at) * DABS(vel(2, plocnew(1), plocnew(2), plocnew(3)))     &
+            + moldiff
 !            (al - at) * vel(2, plocnew(1), plocnew(2), plocnew(3)) ** 2 /    &
 !                  sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
 !                        vel(2, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
@@ -2655,20 +2675,28 @@ MODULE Particles
       
    !      p1 =  theta1 * sqrt( D1) / ( theta1 * sqrt(D1) + theta2 * sqrt(D2) ) 
           p1 =  theta2 * sqrt( D2) / ( theta1 * sqrt(D1) ) 
+  !        p1 =  theta2 * sqrt( DABS(D2)) / ( theta1 * sqrt(DABS(D1)) ) 
 
         CALL RANDOM_SEED(seed)
         CALL RANDOM_NUMBER(prob)
+!           IF( plocold(1) .EQ. 39 .AND. plocold(2) .EQ. 21 .AND. &
+!               plocold(3) .EQ. 20 ) THEN
+!            WRITE( *, *) 'Y direction!'     
+!            WRITE( *, *) 'theta1 =' , theta1, theta2    
+!            WRITE( *, *) 'D1 =' , D1, D2    
+!            WRITE( *, *) 'p1/prob =' , p1, prob    
+!           ENDIF
         IF ( p1 .LT. 1.0 ) THEN
           ! not pass 
           IF (  prob <= 1 - p1 ) THEN
              !p(n, 2) = (loc - 1 ) * delv(2)  + prob * delv(2)
              p(n, 2) = oldloc(2)
-!            WRITE(*,*) "not pass at X direction!"
+!            WRITE(*,*) "not pass at Y direction!"
           ELSE
            ! pass
           ! use the new location
               ypassed = .true.
-!          WRITE(*,*) "passed at X direction!"
+!          WRITE(*,*) "passed at Y direction!"
           ENDIF
          ENDIF
 
@@ -2698,7 +2726,8 @@ MODULE Particles
         D1 = at * sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
                         vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
                         vel(3, plocold(1), plocold(2), plocold(3)) **2 ) +   &
-            (al - at) * vel(3, plocold(1), plocold(2), plocold(3))
+            (al - at) * DABS( vel(3, plocold(1), plocold(2), plocold(3)) ) &
+            + moldiff
 !            (al - at) * vel(3, plocold(1), plocold(2), plocold(3)) **2 /     &
 !                  sqrt( vel(1, plocold(1), plocold(2), plocold(3)) **2 +     &
 !                        vel(2, plocold(1), plocold(2), plocold(3)) **2 +     &
@@ -2707,13 +2736,15 @@ MODULE Particles
         D2 = at * sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3) ) **2 +     &
                         vel(2, plocnew(1), plocnew(2), plocnew(3) ) **2 +     &
                    vel(3, plocnew(1), plocnew(2), plocnew(3) ) **2 ) +        &
-            (al - at) * vel(3, plocnew(1), plocnew(2), plocnew(3) )
+            (al - at) * DABS( vel(3, plocnew(1), plocnew(2), plocnew(3) ) ) &
+            + moldiff
 !            (al - at) * vel(3, plocnew(1), plocnew(2), plocnew(3)) ** 2 /     &
 !                  sqrt( vel(1, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
 !                        vel(2, plocnew(1), plocnew(2), plocnew(3)) **2 +     &
 !                        vel(3, plocnew(1), plocnew(2), plocnew(3)) **2 ) 
       
        ! p1 =  theta1 * sqrt( D1) / ( theta1 * sqrt(D1) + theta2 * sqrt(D2) ) 
+!        p1 =  theta2 * sqrt( D2) / ( theta1 * sqrt(D1) ) 
         p1 =  theta2 * sqrt( D2) / ( theta1 * sqrt(D1) ) 
 
 !       IF ( p1 < 0.5 ) THEN
@@ -2725,17 +2756,24 @@ MODULE Particles
 
         CALL RANDOM_SEED(seed)
         CALL RANDOM_NUMBER(prob)
+!           IF( plocold(1) .EQ. 39 .AND. plocold(2) .EQ. 21 .AND. &
+!               plocold(3) .EQ. 20 ) THEN
+!            WRITE( *, *) 'Z direction!'     
+!            WRITE( *, *) 'theta1 =' , theta1, theta2    
+!            WRITE( *, *) 'D1 =' , D1, D2    
+!            WRITE( *, *) 'p1/prob =' , p1, prob    
+!           ENDIF
         IF ( p1 .LT. 1.0 ) THEN
           ! not pass 
           IF (  prob <= 1 - p1 ) THEN
             ! p(n, 3) = ( loc - 1 ) * delv(3) + prob*delv(3)
              p(n, 3) = oldloc(3)
-!            WRITE(*,*) "not pass at X direction!"
+!            WRITE(*,*) "not pass at Z direction!"
           ELSE
            ! pass
           ! use the new location
               zpassed = .true.
-!          WRITE(*,*) "passed at X direction!"
+!          WRITE(*,*) "passed at Z direction!"
           ENDIF
         ENDIF
 

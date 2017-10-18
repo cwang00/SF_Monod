@@ -26,6 +26,7 @@ REAL*4, DIMENSION(:,:,:,:) ::  current_conc
 REAL*8, DIMENSION(:) :: delv
 CHARACTER (LEN=20) :: bnd_cnd
 
+!write(*,*) bnd_cnd
 ir = 21
 !  PRINT*,' 3rd ic: loop thru ic'
   DO kk = 1, kcat
@@ -34,8 +35,14 @@ ir = 21
           DO iii = 1, n_ic_cats
            IF( ic_part_dens( iii ) .GT. 0 ) THEN
             IF( timestep_num == 1 ) THEN
-               mass = ic_conc( 1, iii ) * delv( 1 ) * delv( 2 ) * delv( 3 ) &
+               IF( bnd_cnd == 'const_flux_septic' ) THEN
+                  mass = ic_conc( 1, iii ) * delv( 1 ) * delv( 2 ) *  &
+                         0.0055 * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk)
+               ELSE
+                  mass = ic_conc( 1, iii ) * delv( 1 ) * delv( 2 ) * delv( 3 ) &
                          * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) 
+               ENDIF
+
                IF ( mass .LT. 0.0 ) mass = 0.0
             ELSE
               IF ( bnd_cnd == 'const_flux' ) THEN
@@ -68,6 +75,14 @@ ir = 21
 
                  IF ( mass .LT. 0.0 ) mass = 0.0
 
+               ELSE IF( bnd_cnd == 'const_flux_septic' ) THEN
+                  mass = ic_conc( timestep_num, iii )             &
+                         * delv( 1 ) * delv( 2 ) *                &
+                         0.0055 * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) &
+                       * (time_end - time_begin ) 
+!                write(*,*) 'poros = ', porosity( ii,jj,kk )
+!                write(*,*) 'sat = ', sat( ii,jj,kk )
+!                 write(*,*) 'mass = ', mass         
                ELSE
                 WRITE(*,*) 'ERROR: non-known boundary condition: ', bnd_cnd
                 stop
@@ -80,14 +95,14 @@ ir = 21
 !                    * delv( 1 ) * delv( 2 ) * delv( 3 ) &
 !                         * 1000 * porosity( ii,jj,kk ) * sat(ii,jj,kk) 
               !remove existing particles
-!              IF( number_of_parts(iii, ii,jj,kk) .GT. 0 ) THEN
-!                DO I = 1, number_of_parts(constitute_num, ii,jj,kk) 
-!                  totalremoved = totalremoved + 1
-!                  removed( totalremoved ) = &
-!                        part_numbers( constitute_num, ii,jj,kk )%arr(I)
-!                ENDDO
-!                number_of_parts(constitute_num, ii,jj,kk) = 0
-!              ENDIF
+              IF( number_of_parts(iii, ii,jj,kk) .GT. 0 ) THEN
+                DO I = 1, number_of_parts(constitute_num, ii,jj,kk) 
+                  totalremoved = totalremoved + 1
+                  removed( totalremoved ) = &
+                        part_numbers( constitute_num, ii,jj,kk )%arr(I)
+                ENDDO
+                number_of_parts(constitute_num, ii,jj,kk) = 0
+              ENDIF
 
 ! assign particles to active locations
 ! check to see if mass of ic > 0
@@ -123,12 +138,16 @@ ir = 21
                 !
                 ! update concentration
                 !
+!                current_conc( constitute_num, ii, jj, kk ) =        &
+!                     current_conc( constitute_num, ii, jj, kk )  +      &
+!                           ic_conc( timestep_num, iii ) * 1000
                 current_conc( constitute_num, ii, jj, kk ) =        &
-                     current_conc( constitute_num, ii, jj, kk )  +      &
                            ic_conc( timestep_num, iii ) * 1000
 
+!                number_of_parts(constitute_num, ii,jj,kk) =      &
+!                   number_of_parts(constitute_num, ii,jj,kk) +      &
+!                     ic_part_dens(iii)
                 number_of_parts(constitute_num, ii,jj,kk) =      &
-                   number_of_parts(constitute_num, ii,jj,kk) +      &
                      ic_part_dens(iii)
             END IF  ! IF ( ABS( mass ) .GT. 0.00000000001 ) THEN
 

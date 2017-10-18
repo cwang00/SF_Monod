@@ -1299,21 +1299,21 @@ end interface
      X2 = Y(13)
 
 PD(1,1) = NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*np&
-ars%NitOxMaxRate_1_day*O2*X1/((npars%NH4HalfSaturationConst_mg_l+&
-NH4)**2*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npars%Emperical&
-Biomass1InhibitionConst_mg_l))-npars%EmpericalBiomass1InhibitionC&
-onst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/((npars%NH4HalfSaturatio&
-nConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npars%&
-EmpericalBiomass1InhibitionConst_mg_l))
+&ars%NitOxMaxRate_1_day*O2*X1/((npars%NH4HalfSaturationConst_mg_l+&
+&NH4)**2*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npars%Emperical&
+&Biomass1InhibitionConst_mg_l))-npars%EmpericalBiomass1InhibitionC&
+&onst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/((npars%NH4HalfSaturatio&
+&nConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npars%&
+&EmpericalBiomass1InhibitionConst_mg_l))
 PD(1,2) = 0
 PD(1,3) = 0
 PD(1,4) = NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*np&
-ars%NitOxMaxRate_1_day*O2*X1/((npars%NH4HalfSaturationConst_mg_l+&
-NH4)*(O2+npars%O2HalfSaturationConst_mg_l)**2*(X1+npars%Emperical&
-Biomass1InhibitionConst_mg_l))-NH4*npars%EmpericalBiomass1Inhibit&
-ionConst_mg_l*npars%NitOxMaxRate_1_day*X1/((npars%NH4HalfSaturati&
-onConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npars&
-%EmpericalBiomass1InhibitionConst_mg_l))
+&ars%NitOxMaxRate_1_day*O2*X1/((npars%NH4HalfSaturationConst_mg_l+&
+&NH4)*(O2+npars%O2HalfSaturationConst_mg_l)**2*(X1+npars%Emperical&
+&Biomass1InhibitionConst_mg_l))-NH4*npars%EmpericalBiomass1Inhibit&
+&ionConst_mg_l*npars%NitOxMaxRate_1_day*X1/((npars%NH4HalfSaturati&
+&onConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npars&
+&%EmpericalBiomass1InhibitionConst_mg_l))
 PD(1,5) = 0
 PD(1,6) = 0
 PD(1,7) = 0
@@ -1322,56 +1322,56 @@ PD(1,9) = 0
 PD(1,10) = 0
 PD(1,11) = 0
 PD(1,12) = NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*n&
-pars%NitOxMaxRate_1_day*O2*X1/((npars%NH4HalfSaturationConst_mg_l&
-+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npars%EmpericalBi&
-omass1InhibitionConst_mg_l)**2)-NH4*npars%EmpericalBiomass1Inhibi&
-tionConst_mg_l*npars%NitOxMaxRate_1_day*O2/((npars%NH4HalfSaturat&
-ionConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npar&
-s%EmpericalBiomass1InhibitionConst_mg_l))
+&pars%NitOxMaxRate_1_day*O2*X1/((npars%NH4HalfSaturationConst_mg_l&
+&+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npars%EmpericalBi&
+&omass1InhibitionConst_mg_l)**2)-NH4*npars%EmpericalBiomass1Inhibi&
+&tionConst_mg_l*npars%NitOxMaxRate_1_day*O2/((npars%NH4HalfSaturat&
+&ionConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npar&
+&s%EmpericalBiomass1InhibitionConst_mg_l))
 PD(1,13) = 0
 PD(2,1) = NO3MoleculeWeight*npars%EmpericalBiomass1Inhibitio&
-nConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(np&
-ars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationCo&
-nst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l))-NO3Mo&
-leculeWeight*NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*npar&
-s%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4HalfSatur&
-ationConst_mg_l+NH4)**2*(O2+npars%O2HalfSaturationConst_mg_l)*(X1&
-+npars%EmpericalBiomass1InhibitionConst_mg_l))
+&nConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(np&
+&ars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationCo&
+&nst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l))-NO3Mo&
+&leculeWeight*NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*npar&
+&s%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4HalfSatur&
+&ationConst_mg_l+NH4)**2*(O2+npars%O2HalfSaturationConst_mg_l)*(X1&
+&+npars%EmpericalBiomass1InhibitionConst_mg_l))
 PD(2,2) = (-4.0)*NO3MoleculeWeight*CH2O*npars%DenitOxMaxRate&
-_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibi&
-tionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturatio&
-nConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npa&
-rs%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCo&
-nst_mg_l))+4.0*NO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1_&
-day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibitio&
-nCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCo&
-nst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)**2*(O2+npa&
-rs%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCo&
-nst_mg_l))
+&_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibi&
+&tionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturatio&
+&nConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npa&
+&rs%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCo&
+&nst_mg_l))+4.0*NO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1_&
+&day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibitio&
+&nCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCo&
+&nst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)**2*(O2+npa&
+&rs%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCo&
+&nst_mg_l))
 PD(2,3) = (-4.0)*NO3MoleculeWeight*NO3*npars%DenitOxMaxRate_&
-1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibit&
-ionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturation&
-Const_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npar&
-s%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCon&
-st_mg_l))+4.0*NO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1_d&
-ay*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibition&
-Coef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCon&
-st_mg_l+CH2O)**2*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npar&
-s%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCon&
-st_mg_l))
+&1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibit&
+&ionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturation&
+&Const_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npar&
+&s%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCon&
+&st_mg_l))+4.0*NO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1_d&
+&ay*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibition&
+&Coef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCon&
+&st_mg_l+CH2O)**2*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npar&
+&s%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCon&
+&st_mg_l))
 PD(2,4) = 4.0*NO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRat&
-e_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhib&
-itionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturati&
-onConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+np&
-ars%O2InhibitionCoef_mg_l)**2*(X2+npars%EmpericalBiomass2Inhibiti&
-onConst_mg_l))+NO3MoleculeWeight*NH4*npars%EmpericalBiomass1Inhib&
-itionConst_mg_l*npars%NitOxMaxRate_1_day*X1/(NH4MoleculeWeight*(n&
-pars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationC&
-onst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l))-NO3M&
-oleculeWeight*NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*npa&
-rs%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4HalfSatu&
-rationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)**2*(X&
-1+npars%EmpericalBiomass1InhibitionConst_mg_l))
+&e_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhib&
+&itionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturati&
+&onConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+np&
+&ars%O2InhibitionCoef_mg_l)**2*(X2+npars%EmpericalBiomass2Inhibiti&
+&onConst_mg_l))+NO3MoleculeWeight*NH4*npars%EmpericalBiomass1Inhib&
+&itionConst_mg_l*npars%NitOxMaxRate_1_day*X1/(NH4MoleculeWeight*(n&
+&pars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationC&
+&onst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l))-NO3M&
+&oleculeWeight*NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*npa&
+&rs%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4HalfSatu&
+&rationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)**2*(X&
+&1+npars%EmpericalBiomass1InhibitionConst_mg_l))
 PD(2,5) = 0
 PD(2,6) = 0
 PD(2,7) = 0
@@ -1380,62 +1380,62 @@ PD(2,9) = 0
 PD(2,10) = 0
 PD(2,11) = 0
 PD(2,12) = NO3MoleculeWeight*NH4*npars%EmpericalBiomass1Inhi&
-bitionConst_mg_l*npars%NitOxMaxRate_1_day*O2/(NH4MoleculeWeight*(&
-npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturation&
-Const_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l))-NO3&
-MoleculeWeight*NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*np&
-ars%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4HalfSat&
-urationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+&
-npars%EmpericalBiomass1InhibitionConst_mg_l)**2)
+&bitionConst_mg_l*npars%NitOxMaxRate_1_day*O2/(NH4MoleculeWeight*(&
+&npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturation&
+&Const_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l))-NO3&
+&MoleculeWeight*NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*np&
+&ars%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4HalfSat&
+&urationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+&
+&npars%EmpericalBiomass1InhibitionConst_mg_l)**2)
 PD(2,13) = (-4.0)*NO3MoleculeWeight*CH2O*NO3*npars%DenitOxMa&
-xRate_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2I&
-nhibitionCoef_mg_l/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturat&
-ionConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+n&
-pars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2Inhibition&
-Const_mg_l))+4.0*NO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_&
-1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibit&
-ionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturation&
-Const_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npar&
-s%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCon&
-st_mg_l)**2)
+&xRate_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2I&
+&nhibitionCoef_mg_l/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturat&
+&ionConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+n&
+&pars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2Inhibition&
+&Const_mg_l))+4.0*NO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_&
+&1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibit&
+&ionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturation&
+&Const_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npar&
+&s%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCon&
+&st_mg_l)**2)
 PD(3,1) = 0
 PD(3,2) = CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%Emperica&
-lBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((np&
-ars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationCo&
-nst_mg_l+NO3)**2*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%Emper&
-icalBiomass2InhibitionConst_mg_l))-CH2O*npars%DenitOxMaxRate_1_da&
-y*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2InhibitionC&
-oef_mg_l*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3&
-HalfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X&
-2+npars%EmpericalBiomass2InhibitionConst_mg_l))
+&lBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((np&
+&ars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationCo&
+&nst_mg_l+NO3)**2*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%Emper&
+&icalBiomass2InhibitionConst_mg_l))-CH2O*npars%DenitOxMaxRate_1_da&
+&y*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2InhibitionC&
+&oef_mg_l*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3&
+&HalfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X&
+&2+npars%EmpericalBiomass2InhibitionConst_mg_l))
 PD(3,3) = -NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalBio&
-mass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((npars%&
-CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_&
-mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBio&
-mass2InhibitionConst_mg_l))+CH2O*NO3*npars%DenitOxMaxRate_1_day*n&
-pars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef&
-_mg_l*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)**2*(npars%NO3&
-HalfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X&
-2+npars%EmpericalBiomass2InhibitionConst_mg_l))-1.0*npars%Emperic&
-alBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*&
-X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSat&
-urationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_&
-l))+1.0*CH2O*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%Or&
-gCarbonOxMaxRate_1_day*O2*X2/((npars%CH2OHalfSaturationConst_mg_l&
-+CH2O)**2*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npars%Emperic&
-alBiomass2InhibitionConst_mg_l))
+&mass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((npars%&
+&CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_&
+&mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBio&
+&mass2InhibitionConst_mg_l))+CH2O*NO3*npars%DenitOxMaxRate_1_day*n&
+&pars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef&
+&_mg_l*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)**2*(npars%NO3&
+&HalfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X&
+&2+npars%EmpericalBiomass2InhibitionConst_mg_l))-1.0*npars%Emperic&
+&alBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*&
+&X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSat&
+&urationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_&
+&l))+1.0*CH2O*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%Or&
+&gCarbonOxMaxRate_1_day*O2*X2/((npars%CH2OHalfSaturationConst_mg_l&
+&+CH2O)**2*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npars%Emperic&
+&alBiomass2InhibitionConst_mg_l))
 PD(3,4) = CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%Emperica&
-lBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((np&
-ars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationCo&
-nst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)**2*(X2+npars%Emper&
-icalBiomass2InhibitionConst_mg_l))-1.0*CH2O*npars%EmpericalBiomas&
-s2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*X2/((npars%&
-CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturationCons&
-t_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))+1.0*CH2&
-O*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMa&
-xRate_1_day*O2*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+&
-npars%O2HalfSaturationConst_mg_l)**2*(X2+npars%EmpericalBiomass2I&
-nhibitionConst_mg_l))
+&lBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((np&
+&ars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationCo&
+&nst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)**2*(X2+npars%Emper&
+&icalBiomass2InhibitionConst_mg_l))-1.0*CH2O*npars%EmpericalBiomas&
+&s2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*X2/((npars%&
+&CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturationCons&
+&t_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))+1.0*CH2&
+&O*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMa&
+&xRate_1_day*O2*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+&
+&npars%O2HalfSaturationConst_mg_l)**2*(X2+npars%EmpericalBiomass2I&
+&nhibitionConst_mg_l))
 PD(3,5) = 0
 PD(3,6) = 0
 PD(3,7) = 0
@@ -1445,54 +1445,54 @@ PD(3,10) = 0
 PD(3,11) = 0
 PD(3,12) = 0
 PD(3,13) = -CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%Emperi&
-calBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l/((npa&
-rs%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationCon&
-st_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%Emperical&
-Biomass2InhibitionConst_mg_l))-1.0*CH2O*npars%EmpericalBiomass2In&
-hibitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2/((npars%CH2O&
-HalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg&
-_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))+CH2O*NO3*np&
-ars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2InhibitionConst_m&
-g_l*npars%O2InhibitionCoef_mg_l*X2/((npars%CH2OHalfSaturationCons&
-t_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%O2&
-InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_m&
-g_l)**2)+1.0*CH2O*npars%EmpericalBiomass2InhibitionConst_mg_l*npa&
-rs%OrgCarbonOxMaxRate_1_day*O2*X2/((npars%CH2OHalfSaturationConst&
-_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npars%Emper&
-icalBiomass2InhibitionConst_mg_l)**2)
+&calBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l/((npa&
+&rs%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationCon&
+&st_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%Emperical&
+&Biomass2InhibitionConst_mg_l))-1.0*CH2O*npars%EmpericalBiomass2In&
+&hibitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2/((npars%CH2O&
+&HalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg&
+&_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))+CH2O*NO3*np&
+&ars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2InhibitionConst_m&
+&g_l*npars%O2InhibitionCoef_mg_l*X2/((npars%CH2OHalfSaturationCons&
+&t_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%O2&
+&InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_m&
+&g_l)**2)+1.0*CH2O*npars%EmpericalBiomass2InhibitionConst_mg_l*npa&
+&rs%OrgCarbonOxMaxRate_1_day*O2*X2/((npars%CH2OHalfSaturationConst&
+&_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npars%Emper&
+&icalBiomass2InhibitionConst_mg_l)**2)
 PD(4,1) = 2*O2MoleculeWeight*NH4*npars%EmpericalBiomass1Inhi&
-bitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeigh&
-t*(npars%NH4HalfSaturationConst_mg_l+NH4)**2*(O2+npars%O2HalfSatu&
-rationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l&
-))-2*O2MoleculeWeight*npars%EmpericalBiomass1InhibitionConst_mg_l&
-*npars%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4Half&
-SaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(&
-X1+npars%EmpericalBiomass1InhibitionConst_mg_l))
+&bitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeigh&
+&t*(npars%NH4HalfSaturationConst_mg_l+NH4)**2*(O2+npars%O2HalfSatu&
+&rationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l&
+&))-2*O2MoleculeWeight*npars%EmpericalBiomass1InhibitionConst_mg_l&
+&*npars%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4Half&
+&SaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(&
+&X1+npars%EmpericalBiomass1InhibitionConst_mg_l))
 PD(4,2) = 0
 PD(4,3) = O2MoleculeWeight*CH2O*npars%EmpericalBiomass2Inhib&
-itionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMolecul&
-eWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)**2*(O2+npars%O2&
-HalfSaturationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCo&
-nst_mg_l))-O2MoleculeWeight*npars%EmpericalBiomass2InhibitionCons&
-t_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMoleculeWeight*(&
-npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturati&
-onConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))
+&itionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMolecul&
+&eWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)**2*(O2+npars%O2&
+&HalfSaturationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCo&
+&nst_mg_l))-O2MoleculeWeight*npars%EmpericalBiomass2InhibitionCons&
+&t_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMoleculeWeight*(&
+&npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturati&
+&onConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))
 PD(4,4) = -O2MoleculeWeight*CH2O*npars%EmpericalBiomass2Inhi&
-bitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*X2/(CH2OMoleculeW&
-eight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfS&
-aturationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_m&
-g_l))+O2MoleculeWeight*CH2O*npars%EmpericalBiomass2InhibitionCons&
-t_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMoleculeWeight*(&
-npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturati&
-onConst_mg_l)**2*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l)&
-)-2*O2MoleculeWeight*NH4*npars%EmpericalBiomass1InhibitionConst_m&
-g_l*npars%NitOxMaxRate_1_day*X1/(NH4MoleculeWeight*(npars%NH4Half&
-SaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(&
-X1+npars%EmpericalBiomass1InhibitionConst_mg_l))+2*O2MoleculeWeig&
-ht*NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMax&
-Rate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4HalfSaturationConst&
-_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)**2*(X1+npars%Emp&
-ericalBiomass1InhibitionConst_mg_l))
+&bitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*X2/(CH2OMoleculeW&
+&eight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfS&
+&aturationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_m&
+&g_l))+O2MoleculeWeight*CH2O*npars%EmpericalBiomass2InhibitionCons&
+&t_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMoleculeWeight*(&
+&npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturati&
+&onConst_mg_l)**2*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l)&
+&)-2*O2MoleculeWeight*NH4*npars%EmpericalBiomass1InhibitionConst_m&
+&g_l*npars%NitOxMaxRate_1_day*X1/(NH4MoleculeWeight*(npars%NH4Half&
+&SaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(&
+&X1+npars%EmpericalBiomass1InhibitionConst_mg_l))+2*O2MoleculeWeig&
+&ht*NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMax&
+&Rate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4HalfSaturationConst&
+&_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)**2*(X1+npars%Emp&
+&ericalBiomass1InhibitionConst_mg_l))
 PD(4,5) = 0
 PD(4,6) = 0
 PD(4,7) = 0
@@ -1501,67 +1501,67 @@ PD(4,9) = 0
 PD(4,10) = 0
 PD(4,11) = 0
 PD(4,12) = 2*O2MoleculeWeight*NH4*npars%EmpericalBiomass1Inh&
-ibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeig&
-ht*(npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSatura&
-tionConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l)*&
-*2)-2*O2MoleculeWeight*NH4*npars%EmpericalBiomass1InhibitionConst&
-_mg_l*npars%NitOxMaxRate_1_day*O2/(NH4MoleculeWeight*(npars%NH4Ha&
-lfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)&
-*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l))
+&ibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeig&
+&ht*(npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSatura&
+&tionConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l)*&
+&*2)-2*O2MoleculeWeight*NH4*npars%EmpericalBiomass1InhibitionConst&
+&_mg_l*npars%NitOxMaxRate_1_day*O2/(NH4MoleculeWeight*(npars%NH4Ha&
+&lfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)&
+&*(X1+npars%EmpericalBiomass1InhibitionConst_mg_l))
 PD(4,13) = O2MoleculeWeight*CH2O*npars%EmpericalBiomass2Inhi&
-bitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMolecu&
-leWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2Ha&
-lfSaturationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCons&
-t_mg_l)**2)-O2MoleculeWeight*CH2O*npars%EmpericalBiomass2Inhibiti&
-onConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2/(CH2OMoleculeWeigh&
-t*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSatur&
-ationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l)&
-)
+&bitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMolecu&
+&leWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2Ha&
+&lfSaturationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCons&
+&t_mg_l)**2)-O2MoleculeWeight*CH2O*npars%EmpericalBiomass2Inhibiti&
+&onConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2/(CH2OMoleculeWeigh&
+&t*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSatur&
+&ationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l)&
+&)
 PD(5,1) = 0
 PD(5,2) = CH2O*npars%DenitOxMaxRate_1_day*npars%EmpericalBio&
-mass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/(CH2OMol&
-eculeWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3H&
-alfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2&
-+npars%EmpericalBiomass2InhibitionConst_mg_l))/5000.0-CH2O*NO3*np&
-ars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2InhibitionConst_m&
-g_l*npars%O2InhibitionCoef_mg_l*X2/(CH2OMoleculeWeight*(npars%CH2&
-OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_&
-l+NO3)**2*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBio&
-mass2InhibitionConst_mg_l))/5000.0
+&mass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/(CH2OMol&
+&eculeWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3H&
+&alfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2&
+&+npars%EmpericalBiomass2InhibitionConst_mg_l))/5000.0-CH2O*NO3*np&
+&ars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2InhibitionConst_m&
+&g_l*npars%O2InhibitionCoef_mg_l*X2/(CH2OMoleculeWeight*(npars%CH2&
+&OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_&
+&l+NO3)**2*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBio&
+&mass2InhibitionConst_mg_l))/5000.0
 PD(5,3) = NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalBiom&
-ass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/(CH2OMole&
-culeWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3Ha&
-lfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+&
-npars%EmpericalBiomass2InhibitionConst_mg_l))/5000.0-CH2O*NO3*npa&
-rs%DenitOxMaxRate_1_day*npars%EmpericalBiomass2InhibitionConst_mg&
-_l*npars%O2InhibitionCoef_mg_l*X2/(CH2OMoleculeWeight*(npars%CH2O&
-HalfSaturationConst_mg_l+CH2O)**2*(npars%NO3HalfSaturationConst_m&
-g_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiom&
-ass2InhibitionConst_mg_l))/5000.0+npars%EmpericalBiomass2Inhibiti&
-onConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMoleculeWe&
-ight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSa&
-turationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg&
-_l))/1000.0-CH2O*npars%EmpericalBiomass2InhibitionConst_mg_l*npar&
-s%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMoleculeWeight*(npars%CH2OH&
-alfSaturationConst_mg_l+CH2O)**2*(O2+npars%O2HalfSaturationConst_&
-mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))/1000.0
+&ass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/(CH2OMole&
+&culeWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3Ha&
+&lfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+&
+&npars%EmpericalBiomass2InhibitionConst_mg_l))/5000.0-CH2O*NO3*npa&
+&rs%DenitOxMaxRate_1_day*npars%EmpericalBiomass2InhibitionConst_mg&
+&_l*npars%O2InhibitionCoef_mg_l*X2/(CH2OMoleculeWeight*(npars%CH2O&
+&HalfSaturationConst_mg_l+CH2O)**2*(npars%NO3HalfSaturationConst_m&
+&g_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiom&
+&ass2InhibitionConst_mg_l))/5000.0+npars%EmpericalBiomass2Inhibiti&
+&onConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMoleculeWe&
+&ight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSa&
+&turationConst_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg&
+&_l))/1000.0-CH2O*npars%EmpericalBiomass2InhibitionConst_mg_l*npar&
+&s%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMoleculeWeight*(npars%CH2OH&
+&alfSaturationConst_mg_l+CH2O)**2*(O2+npars%O2HalfSaturationConst_&
+&mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))/1000.0
 PD(5,4) = -CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%Emperic&
-alBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/(CH&
-2OMoleculeWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars&
-%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l&
-)**2*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))/5000.0+CH2&
-O*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMa&
-xRate_1_day*X2/(CH2OMoleculeWeight*(npars%CH2OHalfSaturationConst&
-_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npars%Emper&
-icalBiomass2InhibitionConst_mg_l))/1000.0-CH2O*npars%EmpericalBio&
-mass2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(C&
-H2OMoleculeWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+n&
-pars%O2HalfSaturationConst_mg_l)**2*(X2+npars%EmpericalBiomass2In&
-hibitionConst_mg_l))/1000.0
+&alBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/(CH&
+&2OMoleculeWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars&
+&%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l&
+&)**2*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))/5000.0+CH2&
+&O*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMa&
+&xRate_1_day*X2/(CH2OMoleculeWeight*(npars%CH2OHalfSaturationConst&
+&_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npars%Emper&
+&icalBiomass2InhibitionConst_mg_l))/1000.0-CH2O*npars%EmpericalBio&
+&mass2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(C&
+&H2OMoleculeWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+n&
+&pars%O2HalfSaturationConst_mg_l)**2*(X2+npars%EmpericalBiomass2In&
+&hibitionConst_mg_l))/1000.0
 PD(5,5) = -npars%K_f_H_1_mday*OH-npars%K_f_CO2_1_day-npars%A&
-cc_1_cm*npars%K_f_2_cm_day
+&cc_1_cm*npars%K_f_2_cm_day
 PD(5,6) = npars%K_b_H_1_day+H*npars%K_b_CO2_1_mday+2*Ca*HCO3&
-*npars%Acc_1_cm*npars%K_b_2_cm_m2day
+&*npars%Acc_1_cm*npars%K_b_2_cm_m2day
 PD(5,7) = HCO3*npars%K_b_CO2_1_mday
 PD(5,8) = 0
 PD(5,9) = HCO3**2*npars%Acc_1_cm*npars%K_b_2_cm_m2day
@@ -1569,112 +1569,112 @@ PD(5,10) = 0
 PD(5,11) = -CO2*npars%K_f_H_1_mday
 PD(5,12) = 0
 PD(5,13) = CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%Emperic&
-alBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l/(CH2OM&
-oleculeWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO&
-3HalfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(&
-X2+npars%EmpericalBiomass2InhibitionConst_mg_l))/5000.0+CH2O*npar&
-s%EmpericalBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRate_&
-1_day*O2/(CH2OMoleculeWeight*(npars%CH2OHalfSaturationConst_mg_l+&
-CH2O)*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npars%EmpericalBi&
-omass2InhibitionConst_mg_l))/1000.0-CH2O*NO3*npars%DenitOxMaxRate&
-_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibi&
-tionCoef_mg_l*X2/(CH2OMoleculeWeight*(npars%CH2OHalfSaturationCon&
-st_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%O&
-2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_&
-mg_l)**2)/5000.0-CH2O*npars%EmpericalBiomass2InhibitionConst_mg_l&
-*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMoleculeWeight*(npars%&
-CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturationCons&
-t_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l)**2)/1000&
-.0
+&alBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l/(CH2OM&
+&oleculeWeight*(npars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO&
+&3HalfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(&
+&X2+npars%EmpericalBiomass2InhibitionConst_mg_l))/5000.0+CH2O*npar&
+&s%EmpericalBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRate_&
+&1_day*O2/(CH2OMoleculeWeight*(npars%CH2OHalfSaturationConst_mg_l+&
+&CH2O)*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npars%EmpericalBi&
+&omass2InhibitionConst_mg_l))/1000.0-CH2O*NO3*npars%DenitOxMaxRate&
+&_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibi&
+&tionCoef_mg_l*X2/(CH2OMoleculeWeight*(npars%CH2OHalfSaturationCon&
+&st_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%O&
+&2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_&
+&mg_l)**2)/5000.0-CH2O*npars%EmpericalBiomass2InhibitionConst_mg_l&
+&*npars%OrgCarbonOxMaxRate_1_day*O2*X2/(CH2OMoleculeWeight*(npars%&
+&CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturationCons&
+&t_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l)**2)/1000&
+&.0
 PD(6,1) = 0
 PD(6,2) = 4.0*HCO3MoleculeWeight*CH2O*npars%DenitOxMaxRate_1&
-_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibiti&
-onCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationC&
-onst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars&
-%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCons&
-t_mg_l))+(-4.0)*HCO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_&
-1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibit&
-ionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturation&
-Const_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)**2*(O2+n&
-pars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2Inhibition&
-Const_mg_l))
+&_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibiti&
+&onCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationC&
+&onst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars&
+&%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCons&
+&t_mg_l))+(-4.0)*HCO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_&
+&1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibit&
+&ionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturation&
+&Const_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)**2*(O2+n&
+&pars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2Inhibition&
+&Const_mg_l))
 PD(6,3) = 4.0*HCO3MoleculeWeight*NO3*npars%DenitOxMaxRate_1_&
-day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibitio&
-nCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCo&
-nst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%&
-O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst&
-_mg_l))+(-4.0)*HCO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1&
-_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibiti&
-onCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationC&
-onst_mg_l+CH2O)**2*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+np&
-ars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionC&
-onst_mg_l))
+&day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibitio&
+&nCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCo&
+&nst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%&
+&O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst&
+&_mg_l))+(-4.0)*HCO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1&
+&_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibiti&
+&onCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationC&
+&onst_mg_l+CH2O)**2*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+np&
+&ars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionC&
+&onst_mg_l))
 PD(6,4) = (-4.0)*HCO3MoleculeWeight*CH2O*NO3*npars%DenitOxMa&
-xRate_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2I&
-nhibitionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSatu&
-rationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O&
-2+npars%O2InhibitionCoef_mg_l)**2*(X2+npars%EmpericalBiomass2Inhi&
-bitionConst_mg_l))
+&xRate_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2I&
+&nhibitionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSatu&
+&rationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O&
+&2+npars%O2InhibitionCoef_mg_l)**2*(X2+npars%EmpericalBiomass2Inhi&
+&bitionConst_mg_l))
 PD(6,5) = npars%K_f_H_1_mday*OH+npars%K_f_CO2_1_day+npars%Ac&
-c_1_cm*npars%K_f_2_cm_day
+&c_1_cm*npars%K_f_2_cm_day
 PD(6,6) = -npars%K_b_HCO3_1_mday*OH-npars%K_b_H_1_day-H*npar&
-s%K_b_CO2_1_mday-2*Ca*HCO3*npars%Acc_1_cm*npars%K_b_2_cm_m2day-Ca&
-*npars%Acc_1_cm*npars%K_b_1_cm_mday
+&s%K_b_CO2_1_mday-2*Ca*HCO3*npars%Acc_1_cm*npars%K_b_2_cm_m2day-Ca&
+&*npars%Acc_1_cm*npars%K_b_1_cm_mday
 PD(6,7) = npars%Acc_1_cm*npars%K_f_1_cm_day-HCO3*npars%K_b_C&
-O2_1_mday
+&O2_1_mday
 PD(6,8) = npars%K_f_HCO3_1_day
 PD(6,9) = -HCO3**2*npars%Acc_1_cm*npars%K_b_2_cm_m2day-HCO3*&
-npars%Acc_1_cm*npars%K_b_1_cm_mday
+&npars%Acc_1_cm*npars%K_b_1_cm_mday
 PD(6,10) = 0
 PD(6,11) = CO2*npars%K_f_H_1_mday-HCO3*npars%K_b_HCO3_1_mday
 
 PD(6,12) = 0
 PD(6,13) = 4.0*HCO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxR&
-ate_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inh&
-ibitionCoef_mg_l/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturatio&
-nConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npa&
-rs%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCo&
-nst_mg_l))+(-4.0)*HCO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRat&
-e_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhib&
-itionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturati&
-onConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+np&
-ars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionC&
-onst_mg_l)**2)
+&ate_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inh&
+&ibitionCoef_mg_l/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturatio&
+&nConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npa&
+&rs%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCo&
+&nst_mg_l))+(-4.0)*HCO3MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRat&
+&e_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhib&
+&itionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturati&
+&onConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+np&
+&ars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionC&
+&onst_mg_l)**2)
 PD(7,1) = npars%EmpericalBiomass1InhibitionConst_mg_l*npars%&
-NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4HalfSaturat&
-ionConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npar&
-s%EmpericalBiomass1InhibitionConst_mg_l))/250.0-NH4*npars%Emperic&
-alBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(NH&
-4MoleculeWeight*(npars%NH4HalfSaturationConst_mg_l+NH4)**2*(O2+np&
-ars%O2HalfSaturationConst_mg_l)*(X1+npars%EmpericalBiomass1Inhibi&
-tionConst_mg_l))/250.0
+&NitOxMaxRate_1_day*O2*X1/(NH4MoleculeWeight*(npars%NH4HalfSaturat&
+&ionConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npar&
+&s%EmpericalBiomass1InhibitionConst_mg_l))/250.0-NH4*npars%Emperic&
+&alBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(NH&
+&4MoleculeWeight*(npars%NH4HalfSaturationConst_mg_l+NH4)**2*(O2+np&
+&ars%O2HalfSaturationConst_mg_l)*(X1+npars%EmpericalBiomass1Inhibi&
+&tionConst_mg_l))/250.0
 PD(7,2) = 0
 PD(7,3) = 0
 PD(7,4) = NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*np&
-ars%NitOxMaxRate_1_day*X1/(NH4MoleculeWeight*(npars%NH4HalfSatura&
-tionConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npa&
-rs%EmpericalBiomass1InhibitionConst_mg_l))/250.0-NH4*npars%Emperi&
-calBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(N&
-H4MoleculeWeight*(npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npar&
-s%O2HalfSaturationConst_mg_l)**2*(X1+npars%EmpericalBiomass1Inhib&
-itionConst_mg_l))/250.0
+&ars%NitOxMaxRate_1_day*X1/(NH4MoleculeWeight*(npars%NH4HalfSatura&
+&tionConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+npa&
+&rs%EmpericalBiomass1InhibitionConst_mg_l))/250.0-NH4*npars%Emperi&
+&calBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(N&
+&H4MoleculeWeight*(npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npar&
+&s%O2HalfSaturationConst_mg_l)**2*(X1+npars%EmpericalBiomass1Inhib&
+&itionConst_mg_l))/250.0
 PD(7,5) = npars%K_f_CO2_1_day
 PD(7,6) = Ca*npars%Acc_1_cm*npars%K_b_1_cm_mday-H*npars%K_b_&
-CO2_1_mday
+&CO2_1_mday
 PD(7,7) = -npars%K_b_H2O_1_mday*OH-npars%Acc_1_cm*npars%K_f_&
-1_cm_day-HCO3*npars%K_b_CO2_1_mday
+&1_cm_day-HCO3*npars%K_b_CO2_1_mday
 PD(7,8) = 0
 PD(7,9) = HCO3*npars%Acc_1_cm*npars%K_b_1_cm_mday
 PD(7,10) = 0
 PD(7,11) = -H*npars%K_b_H2O_1_mday
 PD(7,12) = NH4*npars%EmpericalBiomass1InhibitionConst_mg_l*n&
-pars%NitOxMaxRate_1_day*O2/(NH4MoleculeWeight*(npars%NH4HalfSatur&
-ationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+np&
-ars%EmpericalBiomass1InhibitionConst_mg_l))/250.0-NH4*npars%Emper&
-icalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(&
-NH4MoleculeWeight*(npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npa&
-rs%O2HalfSaturationConst_mg_l)*(X1+npars%EmpericalBiomass1Inhibit&
-ionConst_mg_l)**2)/250.0
+&pars%NitOxMaxRate_1_day*O2/(NH4MoleculeWeight*(npars%NH4HalfSatur&
+&ationConst_mg_l+NH4)*(O2+npars%O2HalfSaturationConst_mg_l)*(X1+np&
+&ars%EmpericalBiomass1InhibitionConst_mg_l))/250.0-NH4*npars%Emper&
+&icalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*X1/(&
+&NH4MoleculeWeight*(npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npa&
+&rs%O2HalfSaturationConst_mg_l)*(X1+npars%EmpericalBiomass1Inhibit&
+&ionConst_mg_l)**2)/250.0
 PD(7,13) = 0
 PD(8,1) = 0
 PD(8,2) = 0
@@ -1695,45 +1695,45 @@ PD(9,3) = 0
 PD(9,4) = 0
 PD(9,5) = npars%Acc_1_cm*npars%K_f_2_cm_day
 PD(9,6) = -2*Ca*HCO3*npars%Acc_1_cm*npars%K_b_2_cm_m2day-Ca*&
-npars%Acc_1_cm*npars%K_b_1_cm_mday
+&npars%Acc_1_cm*npars%K_b_1_cm_mday
 PD(9,7) = npars%Acc_1_cm*npars%K_f_1_cm_day
 PD(9,8) = -Ca*npars%Acc_1_cm*npars%K_b_3_cm_mday
 PD(9,9) = -CO3*npars%Acc_1_cm*npars%K_b_3_cm_mday-HCO3**2*np&
-ars%Acc_1_cm*npars%K_b_2_cm_m2day-HCO3*npars%Acc_1_cm*npars%K_b_1&
-_cm_mday
+&ars%Acc_1_cm*npars%K_b_2_cm_m2day-HCO3*npars%Acc_1_cm*npars%K_b_1&
+&_cm_mday
 PD(9,10) = 0
 PD(9,11) = 0
 PD(9,12) = 0
 PD(9,13) = 0
 PD(10,1) = 0
 PD(10,2) = 2.0*N2MoleculeWeight*CH2O*npars%DenitOxMaxRate_1_&
-day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibitio&
-nCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCo&
-nst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%&
-O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst&
-_mg_l))+(-2.0)*N2MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1_d&
-ay*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibition&
-Coef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCon&
-st_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)**2*(O2+npar&
-s%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCon&
-st_mg_l))
+&day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibitio&
+&nCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCo&
+&nst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%&
+&O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst&
+&_mg_l))+(-2.0)*N2MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1_d&
+&ay*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibition&
+&Coef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCon&
+&st_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)**2*(O2+npar&
+&s%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCon&
+&st_mg_l))
 PD(10,3) = 2.0*N2MoleculeWeight*NO3*npars%DenitOxMaxRate_1_d&
-ay*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibition&
-Coef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCon&
-st_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%O&
-2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_&
-mg_l))+(-2.0)*N2MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1_da&
-y*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2InhibitionC&
-oef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCons&
-t_mg_l+CH2O)**2*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars&
-%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCons&
-t_mg_l))
+&ay*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibition&
+&Coef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCon&
+&st_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%O&
+&2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_&
+&mg_l))+(-2.0)*N2MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1_da&
+&y*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2InhibitionC&
+&oef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationCons&
+&t_mg_l+CH2O)**2*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars&
+&%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCons&
+&t_mg_l))
 PD(10,4) = (-2.0)*N2MoleculeWeight*CH2O*NO3*npars%DenitOxMax&
-Rate_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2In&
-hibitionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSatur&
-ationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2&
-+npars%O2InhibitionCoef_mg_l)**2*(X2+npars%EmpericalBiomass2Inhib&
-itionConst_mg_l))
+&Rate_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2In&
+&hibitionCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSatur&
+&ationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2&
+&+npars%O2InhibitionCoef_mg_l)**2*(X2+npars%EmpericalBiomass2Inhib&
+&itionConst_mg_l))
 PD(10,5) = 0
 PD(10,6) = 0
 PD(10,7) = 0
@@ -1743,16 +1743,16 @@ PD(10,10) = 0
 PD(10,11) = 0
 PD(10,12) = 0
 PD(10,13) = 2.0*N2MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRa&
-te_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhi&
-bitionCoef_mg_l/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturation&
-Const_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npar&
-s%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCon&
-st_mg_l))+(-2.0)*N2MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1&
-_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibiti&
-onCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationC&
-onst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars&
-%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCons&
-t_mg_l)**2)
+&te_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhi&
+&bitionCoef_mg_l/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturation&
+&Const_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npar&
+&s%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCon&
+&st_mg_l))+(-2.0)*N2MoleculeWeight*CH2O*NO3*npars%DenitOxMaxRate_1&
+&_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inhibiti&
+&onCoef_mg_l*X2/(5.0*CH2OMoleculeWeight*(npars%CH2OHalfSaturationC&
+&onst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars&
+&%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2InhibitionCons&
+&t_mg_l)**2)
 PD(11,1) = 0
 PD(11,2) = 0
 PD(11,3) = 0
@@ -1764,29 +1764,29 @@ PD(11,8) = npars%K_f_HCO3_1_day
 PD(11,9) = 0
 PD(11,10) = 0
 PD(11,11) = -CO2*npars%K_f_H_1_mday-HCO3*npars%K_b_HCO3_1_md&
-ay-H*npars%K_b_H2O_1_mday
+&ay-H*npars%K_b_H2O_1_mday
 PD(11,12) = 0
 PD(11,13) = 0
 PD(12,1) = npars%Biomass1YieldCoeff_M_biomass_M_substrate*np&
-ars%EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_da&
-y*O2*X1/((npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2Half&
-SaturationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_&
-mg_l))-NH4*npars%Biomass1YieldCoeff_M_biomass_M_substrate*npars%E&
-mpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*&
-X1/((npars%NH4HalfSaturationConst_mg_l+NH4)**2*(O2+npars%O2HalfSa&
-turationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg&
-_l))
+&ars%EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_da&
+&y*O2*X1/((npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2Half&
+&SaturationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_&
+&mg_l))-NH4*npars%Biomass1YieldCoeff_M_biomass_M_substrate*npars%E&
+&mpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2*&
+&X1/((npars%NH4HalfSaturationConst_mg_l+NH4)**2*(O2+npars%O2HalfSa&
+&turationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg&
+&_l))
 PD(12,2) = 0
 PD(12,3) = 0
 PD(12,4) = NH4*npars%Biomass1YieldCoeff_M_biomass_M_substrat&
-e*npars%EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_&
-1_day*X1/((npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2Hal&
-fSaturationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst&
-_mg_l))-NH4*npars%Biomass1YieldCoeff_M_biomass_M_substrate*npars%&
-EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2&
-*X1/((npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSatu&
-rationConst_mg_l)**2*(X1+npars%EmpericalBiomass1InhibitionConst_m&
-g_l))
+&e*npars%EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_&
+&1_day*X1/((npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2Hal&
+&fSaturationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst&
+&_mg_l))-NH4*npars%Biomass1YieldCoeff_M_biomass_M_substrate*npars%&
+&EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O2&
+&*X1/((npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSatu&
+&rationConst_mg_l)**2*(X1+npars%EmpericalBiomass1InhibitionConst_m&
+&g_l))
 PD(12,5) = 0
 PD(12,6) = 0
 PD(12,7) = 0
@@ -1795,56 +1795,56 @@ PD(12,9) = 0
 PD(12,10) = 0
 PD(12,11) = 0
 PD(12,12) = NH4*npars%Biomass1YieldCoeff_M_biomass_M_substra&
-te*npars%EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate&
-_1_day*O2/((npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2Ha&
-lfSaturationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionCons&
-t_mg_l))-NH4*npars%Biomass1YieldCoeff_M_biomass_M_substrate*npars&
-%EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O&
-2*X1/((npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSat&
-urationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_&
-l)**2)-npars%Biomass1SpecDecayConst_1_day
+&te*npars%EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate&
+&_1_day*O2/((npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2Ha&
+&lfSaturationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionCons&
+&t_mg_l))-NH4*npars%Biomass1YieldCoeff_M_biomass_M_substrate*npars&
+&%EmpericalBiomass1InhibitionConst_mg_l*npars%NitOxMaxRate_1_day*O&
+&2*X1/((npars%NH4HalfSaturationConst_mg_l+NH4)*(O2+npars%O2HalfSat&
+&urationConst_mg_l)*(X1+npars%EmpericalBiomass1InhibitionConst_mg_&
+&l)**2)-npars%Biomass1SpecDecayConst_1_day
 PD(12,13) = 0
 PD(13,1) = 0
 PD(13,2) = -npars%Biomass2YieldCoeff_M_biomass_M_substrate*(&
-CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2Inhibi&
-tionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((npars%CH2OHalfSat&
-urationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)**&
-2*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2Inh&
-ibitionConst_mg_l))-CH2O*npars%DenitOxMaxRate_1_day*npars%Emperic&
-alBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((n&
-pars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationC&
-onst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%Emperic&
-alBiomass2InhibitionConst_mg_l)))
+&CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2Inhibi&
+&tionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((npars%CH2OHalfSat&
+&urationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)**&
+&2*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2Inh&
+&ibitionConst_mg_l))-CH2O*npars%DenitOxMaxRate_1_day*npars%Emperic&
+&alBiomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((n&
+&pars%CH2OHalfSaturationConst_mg_l+CH2O)*(npars%NO3HalfSaturationC&
+&onst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%Emperic&
+&alBiomass2InhibitionConst_mg_l)))
 PD(13,3) = -npars%Biomass2YieldCoeff_M_biomass_M_substrate*(&
--NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2Inhibition&
-Const_mg_l*npars%O2InhibitionCoef_mg_l*X2/((npars%CH2OHalfSaturat&
-ionConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+n&
-pars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2Inhibition&
-Const_mg_l))+CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalB&
-iomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((npar&
-s%CH2OHalfSaturationConst_mg_l+CH2O)**2*(npars%NO3HalfSaturationC&
-onst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%Emperic&
-alBiomass2InhibitionConst_mg_l))-1.0*npars%EmpericalBiomass2Inhib&
-itionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/((npars%CH2O&
-HalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg&
-_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))+1.0*CH2O*np&
-ars%EmpericalBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRat&
-e_1_day*O2*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)**2*(O2+n&
-pars%O2HalfSaturationConst_mg_l)*(X2+npars%EmpericalBiomass2Inhib&
-itionConst_mg_l)))
+&-NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2Inhibition&
+&Const_mg_l*npars%O2InhibitionCoef_mg_l*X2/((npars%CH2OHalfSaturat&
+&ionConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O2+n&
+&pars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2Inhibition&
+&Const_mg_l))+CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalB&
+&iomass2InhibitionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((npar&
+&s%CH2OHalfSaturationConst_mg_l+CH2O)**2*(npars%NO3HalfSaturationC&
+&onst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_mg_l)*(X2+npars%Emperic&
+&alBiomass2InhibitionConst_mg_l))-1.0*npars%EmpericalBiomass2Inhib&
+&itionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*X2/((npars%CH2O&
+&HalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg&
+&_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l))+1.0*CH2O*np&
+&ars%EmpericalBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRat&
+&e_1_day*O2*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)**2*(O2+n&
+&pars%O2HalfSaturationConst_mg_l)*(X2+npars%EmpericalBiomass2Inhib&
+&itionConst_mg_l)))
 PD(13,4) = -npars%Biomass2YieldCoeff_M_biomass_M_substrate*(&
-CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2Inhibi&
-tionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((npars%CH2OHalfSat&
-urationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(&
-O2+npars%O2InhibitionCoef_mg_l)**2*(X2+npars%EmpericalBiomass2Inh&
-ibitionConst_mg_l))-1.0*CH2O*npars%EmpericalBiomass2InhibitionCon&
-st_mg_l*npars%OrgCarbonOxMaxRate_1_day*X2/((npars%CH2OHalfSaturat&
-ionConst_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npa&
-rs%EmpericalBiomass2InhibitionConst_mg_l))+1.0*CH2O*npars%Emperic&
-alBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*&
-X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSat&
-urationConst_mg_l)**2*(X2+npars%EmpericalBiomass2InhibitionConst_&
-mg_l)))
+&CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2Inhibi&
+&tionConst_mg_l*npars%O2InhibitionCoef_mg_l*X2/((npars%CH2OHalfSat&
+&urationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(&
+&O2+npars%O2InhibitionCoef_mg_l)**2*(X2+npars%EmpericalBiomass2Inh&
+&ibitionConst_mg_l))-1.0*CH2O*npars%EmpericalBiomass2InhibitionCon&
+&st_mg_l*npars%OrgCarbonOxMaxRate_1_day*X2/((npars%CH2OHalfSaturat&
+&ionConst_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npa&
+&rs%EmpericalBiomass2InhibitionConst_mg_l))+1.0*CH2O*npars%Emperic&
+&alBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxMaxRate_1_day*O2*&
+&X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2+npars%O2HalfSat&
+&urationConst_mg_l)**2*(X2+npars%EmpericalBiomass2InhibitionConst_&
+&mg_l)))
 PD(13,5) = 0
 PD(13,6) = 0
 PD(13,7) = 0
@@ -1854,22 +1854,22 @@ PD(13,10) = 0
 PD(13,11) = 0
 PD(13,12) = 0
 PD(13,13) = -npars%Biomass2YieldCoeff_M_biomass_M_substrate*&
-(-CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2Inhi&
-bitionConst_mg_l*npars%O2InhibitionCoef_mg_l/((npars%CH2OHalfSatu&
-rationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O&
-2+npars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2Inhibit&
-ionConst_mg_l))-1.0*CH2O*npars%EmpericalBiomass2InhibitionConst_m&
-g_l*npars%OrgCarbonOxMaxRate_1_day*O2/((npars%CH2OHalfSaturationC&
-onst_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npars%E&
-mpericalBiomass2InhibitionConst_mg_l))+CH2O*NO3*npars%DenitOxMaxR&
-ate_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inh&
-ibitionCoef_mg_l*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(n&
-pars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_&
-mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l)**2)+1.0*CH&
-2O*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxM&
-axRate_1_day*O2*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2&
-+npars%O2HalfSaturationConst_mg_l)*(X2+npars%EmpericalBiomass2Inh&
-ibitionConst_mg_l)**2))-npars%Biomass2SpecDecayConst_1_day
+&(-CH2O*NO3*npars%DenitOxMaxRate_1_day*npars%EmpericalBiomass2Inhi&
+&bitionConst_mg_l*npars%O2InhibitionCoef_mg_l/((npars%CH2OHalfSatu&
+&rationConst_mg_l+CH2O)*(npars%NO3HalfSaturationConst_mg_l+NO3)*(O&
+&2+npars%O2InhibitionCoef_mg_l)*(X2+npars%EmpericalBiomass2Inhibit&
+&ionConst_mg_l))-1.0*CH2O*npars%EmpericalBiomass2InhibitionConst_m&
+&g_l*npars%OrgCarbonOxMaxRate_1_day*O2/((npars%CH2OHalfSaturationC&
+&onst_mg_l+CH2O)*(O2+npars%O2HalfSaturationConst_mg_l)*(X2+npars%E&
+&mpericalBiomass2InhibitionConst_mg_l))+CH2O*NO3*npars%DenitOxMaxR&
+&ate_1_day*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%O2Inh&
+&ibitionCoef_mg_l*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(n&
+&pars%NO3HalfSaturationConst_mg_l+NO3)*(O2+npars%O2InhibitionCoef_&
+&mg_l)*(X2+npars%EmpericalBiomass2InhibitionConst_mg_l)**2)+1.0*CH&
+&2O*npars%EmpericalBiomass2InhibitionConst_mg_l*npars%OrgCarbonOxM&
+&axRate_1_day*O2*X2/((npars%CH2OHalfSaturationConst_mg_l+CH2O)*(O2&
+&+npars%O2HalfSaturationConst_mg_l)*(X2+npars%EmpericalBiomass2Inh&
+&ibitionConst_mg_l)**2))-npars%Biomass2SpecDecayConst_1_day
 
 !PD(1,1) = 1.0*NH4*O2*X1/((NH4+0.1)**2*(O2+0.1)*(X1+1.0))-1.0&
 !*O2*X1/((NH4+0.1)*(O2+0.1)*(X1+1.0))

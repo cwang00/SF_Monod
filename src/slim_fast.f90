@@ -424,8 +424,8 @@ WRITE(666,*)
 WRITE(666,*) 'allocated 1'
 WRITE(666,*)
 flush(666)
- allocate( ic_time_begin(13, 3000  ), ic_time_end( 13, 3000 ), &
-            ic_mass_or_conc( 13, 3000, 20 ) )
+ allocate( ic_time_begin(13, 6000  ), ic_time_end( 13, 6000 ), &
+            ic_mass_or_conc( 13, 6000, 20 ) )
 
 WRITE(666,*)
 WRITE(666,*) 'allocated 2'
@@ -3350,7 +3350,7 @@ end if ! part_conc_write
 !
 !
       END DO
-        else if (concprint == 2 ) THEN
+        else if (concprint == 2 .AND. MOD( it, 10 ) .EQ. 0 ) THEN
               WRITE (dotit,199) it
 
   CALL vtk_write(time, c(:,:,:,:),confile(:),xtent, ytent,ztent,delv(1),delv(2),delv(3),it,n_constituents,vtk_file)

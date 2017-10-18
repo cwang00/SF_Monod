@@ -237,11 +237,19 @@ puts $fileId "$well_x_location($ii) , $well_y_location($ii) , $well_screen_top($
 if {[info exists bdy_cond ]} {
    if { $bdy_cond == "const_conc" } {
        puts $fileId "const_conc                      !const conc boundary"
-   } else {
+   } elseif { $bdy_cond == "const_flux"} {
        puts $fileId  "const_flux                    !const flux boundary" 
-   }
+   } elseif { $bdy_cond == "const_flux_x" } {
+       puts $fileId  "const_flux_x                   !const flux x boundary" 
+   } elseif { $bdy_cond == "const_flux_y" } {
+       puts $fileId  "const_flux_y                   !const flux y boundary" 
+   } elseif { $bdy_cond == "const_flux_z" } {
+       puts $fileId  "const_flux_z                   !const flux z boundary" 
+   } elseif { $bdy_cond == "const_flux_septic" } {
+       puts $fileId  "const_flux_septic               !const flux boundary for septic flux of 2 m/year" 
 } else {
 puts $fileId  "const_flux                          !const flux boundary" 
+}
 }
 
 puts $fileId "$modelname                           !select which reaction model"

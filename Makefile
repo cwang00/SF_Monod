@@ -29,8 +29,8 @@ F90 = pgf90
 #F90 = gfortran
 
 SLIM_r2.0.exe : $(source)
-	$(F90) -O3 -o bin/SLIM.exe $(sources)
-#	$(F90) -g -o bin/SLIM.exe $(sources)
+#	$(F90) -O3 -o bin/SLIM.exe $(sources)
+	$(F90) -g -o bin/SLIM.exe $(sources)
 
 .o : 
 	$(F90) -O3 -c src/$(objects)
